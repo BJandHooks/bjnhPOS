@@ -15,6 +15,7 @@ const NAV = [
   { label: 'Events',     path: '/events',       icon: '◎', roles: ['owner','manager'] },
   { section: 'Marketing' },
   { label: 'Media Hub',  path: '/media',        icon: '📷', roles: ['owner','manager'] },
+  { label: 'Online Store', path: '/online-store', icon: '🛒', roles: ['owner','manager'] },
   { section: 'Admin' },
   { label: 'Import Data', path: '/imports',    icon: '↓', roles: ['owner'] },
   { label: 'Staff',     path: '/staff',      icon: '◑', roles: ['owner'] },

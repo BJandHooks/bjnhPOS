@@ -25,6 +25,7 @@ app.use('/api/trades', require('./routes/trades'));
 app.use('/api/imports', require('./routes/imports'));
 app.use('/api/events', require('./routes/events'));
 app.use('/api/media', require('./routes/media'));
+app.use('/api/online-store', require('./routes/onlineStore'));
 app.use('/api/reports', require('./routes/reports'));
 
 const PORT = process.env.PORT || 5000;

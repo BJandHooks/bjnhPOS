@@ -597,3 +597,101 @@ CREATE INDEX idx_social_posts_platform ON social_posts(platform);
 CREATE INDEX idx_social_posts_status ON social_posts(status);
 CREATE INDEX idx_social_posts_scheduled ON social_posts(scheduled_at);
 CREATE INDEX idx_social_captions_approved ON social_captions_pool(approved);
+
+-- ========================
+-- ONLINE STORE & SYNC (Phase 7)
+-- ========================
+CREATE TABLE online_store_settings (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  store_enabled BOOLEAN DEFAULT false,
+  store_url VARCHAR(255),
+  store_theme VARCHAR(100),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE inventory_online_status (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  inventory_id UUID REFERENCES inventory(id) ON DELETE CASCADE,
+  is_online BOOLEAN DEFAULT false,
+  online_platforms VARCHAR(500), -- comma-separated: discogs,ebay,etsy,shopify
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE platform_listings (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  inventory_id UUID REFERENCES inventory(id) ON DELETE CASCADE,
+  platform VARCHAR(100) NOT NULL CHECK (platform IN ('discogs', 'ebay', 'etsy')),
+  external_listing_id VARCHAR(255),
+  listing_title VARCHAR(500),
+  listing_url VARCHAR(1000),
+  listing_status VARCHAR(50) CHECK (listing_status IN ('active', 'sold', 'delisted', 'archived')),
+  last_synced_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE platform_sync_jobs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  platform VARCHAR(100) NOT NULL,
+  sync_type VARCHAR(50) CHECK (sync_type IN ('inventory', 'orders', 'full')),
+  status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'running', 'complete', 'failed')),
+  records_synced INTEGER DEFAULT 0,
+  error_message TEXT,
+  started_at TIMESTAMP,
+  completed_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE inventory_sync_log (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  inventory_id UUID REFERENCES inventory(id) ON DELETE SET NULL,
+  action VARCHAR(50) CHECK (action IN ('listed', 'delisted', 'sold', 'updated')),
+  platform VARCHAR(100),
+  details JSONB,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE google_shopping_feed (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  inventory_id UUID REFERENCES inventory(id) ON DELETE CASCADE,
+  product_title VARCHAR(500),
+  product_description TEXT,
+  price NUMERIC(10,2),
+  image_url VARCHAR(1000),
+  product_url VARCHAR(1000),
+  category VARCHAR(255),
+  in_stock BOOLEAN,
+  condition VARCHAR(50),
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE website_monitoring (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  check_type VARCHAR(50) NOT NULL CHECK (check_type IN ('uptime', 'ssl_cert', 'broken_links', 'sitemaps')),
+  status VARCHAR(50) DEFAULT 'ok' CHECK (status IN ('ok', 'warning', 'error')),
+  last_checked_at TIMESTAMP,
+  next_check_at TIMESTAMP,
+  details JSONB,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE backups (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  backup_type VARCHAR(50) NOT NULL CHECK (backup_type IN ('database', 'files')),
+  backup_location VARCHAR(500),
+  backup_size INTEGER,
+  backup_date TIMESTAMP,
+  status VARCHAR(50) DEFAULT 'complete' CHECK (status IN ('pending', 'running', 'complete', 'failed')),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Indexes for online store
+CREATE INDEX idx_inventory_online_status_inventory ON inventory_online_status(inventory_id);
+CREATE INDEX idx_platform_listings_inventory ON platform_listings(inventory_id);
+CREATE INDEX idx_platform_listings_platform ON platform_listings(platform);
+CREATE INDEX idx_platform_sync_jobs_platform ON platform_sync_jobs(platform);
+CREATE INDEX idx_inventory_sync_log_inventory ON inventory_sync_log(inventory_id);
+CREATE INDEX idx_google_shopping_feed_inventory ON google_shopping_feed(inventory_id);
+CREATE INDEX idx_website_monitoring_type ON website_monitoring(check_type);
+CREATE INDEX idx_backups_date ON backups(backup_date);
