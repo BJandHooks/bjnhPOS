@@ -10,7 +10,7 @@ const DISCOGS_TOKEN = process.env.DISCOGS_TOKEN || '';
 // Helper: Search Discogs for an item and get estimated price
 async function searchDiscogsPrice(title, condition) {
   try {
-    if (\!DISCOGS_TOKEN) return null;
+    if (!DISCOGS_TOKEN) return null;
     
     const headers = { 'User-Agent': 'bjnhPOS/1.0 +http://bjnhpos.local' };
     if (DISCOGS_TOKEN) headers['Authorization'] = `Discogs token=${DISCOGS_TOKEN}`;
@@ -21,7 +21,7 @@ async function searchDiscogsPrice(title, condition) {
       timeout: 5000
     });
 
-    if (\!searchRes.data.results || searchRes.data.results.length === 0) {
+    if (!searchRes.data.results || searchRes.data.results.length === 0) {
       return null;
     }
 
@@ -33,7 +33,7 @@ async function searchDiscogsPrice(title, condition) {
       { headers, timeout: 5000 }
     );
 
-    if (\!priceRes.data.items || priceRes.data.items.length === 0) {
+    if (!priceRes.data.items || priceRes.data.items.length === 0) {
       return null;
     }
 
@@ -137,7 +137,7 @@ router.get('/', auth, async (req, res) => {
 router.get('/:id', auth, async (req, res) => {
   try {
     const tradeRes = await db.query('SELECT * FROM trades WHERE id = $1', [req.params.id]);
-    if (\!tradeRes.rows[0]) return res.status(404).json({ error: 'Trade not found' });
+    if (!tradeRes.rows[0]) return res.status(404).json({ error: 'Trade not found' });
 
     const itemsRes = await db.query('SELECT * FROM trade_items WHERE trade_id = $1', [req.params.id]);
 
@@ -267,7 +267,7 @@ router.patch('/:id/accept', auth, requireRole('owner', 'manager', 'cashier'), as
   
   try {
     const tradeRes = await db.query('SELECT * FROM trades WHERE id = $1', [req.params.id]);
-    if (\!tradeRes.rows[0]) return res.status(404).json({ error: 'Trade not found' });
+    if (!tradeRes.rows[0]) return res.status(404).json({ error: 'Trade not found' });
 
     const trade = tradeRes.rows[0];
 
@@ -312,7 +312,7 @@ router.patch('/:id/reject', auth, requireRole('owner', 'manager', 'cashier'), as
       [req.params.id]
     );
 
-    if (\!updated.rows[0]) return res.status(404).json({ error: 'Trade not found' });
+    if (!updated.rows[0]) return res.status(404).json({ error: 'Trade not found' });
 
     // Record in trade history
     const trade = updated.rows[0];

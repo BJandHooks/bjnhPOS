@@ -12,8 +12,8 @@ function parseCSV(line) {
   for (let i = 0; i < line.length; i++) {
     const char = line[i];
     if (char === '"') {
-      insideQuotes = \!insideQuotes;
-    } else if (char === ',' && \!insideQuotes) {
+      insideQuotes = !insideQuotes;
+    } else if (char === ',' && !insideQuotes) {
       result.push(current.trim());
       current = '';
     } else {
@@ -29,17 +29,17 @@ function validateImportRow(type, row, headers) {
   const errors = [];
 
   if (type === 'consignors') {
-    if (\!row.name) errors.push('Name is required');
-    if (\!row.split_percentage) errors.push('Split percentage is required');
+    if (!row.name) errors.push('Name is required');
+    if (!row.split_percentage) errors.push('Split percentage is required');
   } else if (type === 'inventory') {
-    if (\!row.title) errors.push('Title is required');
-    if (\!row.condition) errors.push('Condition is required');
-    if (\!row.price) errors.push('Price is required');
+    if (!row.title) errors.push('Title is required');
+    if (!row.condition) errors.push('Condition is required');
+    if (!row.price) errors.push('Price is required');
   } else if (type === 'customers') {
-    if (\!row.name) errors.push('Name is required');
+    if (!row.name) errors.push('Name is required');
   } else if (type === 'sales') {
-    if (\!row.customer_id) errors.push('Customer ID is required');
-    if (\!row.total) errors.push('Total is required');
+    if (!row.customer_id) errors.push('Customer ID is required');
+    if (!row.total) errors.push('Total is required');
   }
 
   return errors;
@@ -325,7 +325,7 @@ router.get('/templates/:type', auth, (req, res) => {
   };
 
   const template = templates[req.params.type];
-  if (\!template) {
+  if (!template) {
     return res.status(404).json({ error: 'Template not found' });
   }
 

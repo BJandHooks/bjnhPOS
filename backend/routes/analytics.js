@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const auth = require('../middleware/auth');
+const { auth } = require('../middleware/auth');
 
 function dateRange(query) {
   const end = query.end ? new Date(query.end) : new Date();
@@ -164,7 +164,7 @@ router.get('/year-over-year', auth, async (req, res) => {
     const byMonth = {};
     for (const row of result.rows) {
       const key = `${row.month}-${row.month_name}`;
-      if (\!byMonth[key]) byMonth[key] = { month: row.month, month_name: row.month_name, years: {} };
+      if (!byMonth[key]) byMonth[key] = { month: row.month, month_name: row.month_name, years: {} };
       byMonth[key].years[row.year] = { transactions: row.transactions, revenue: row.revenue };
     }
     res.json(Object.values(byMonth).sort((a,b) => a.month - b.month));
@@ -256,7 +256,7 @@ router.get('/seasonal-demand', auth, async (req, res) => {
     `, [currentMonth]);
     const byGenre = {};
     for (const row of result.rows) {
-      if (\!byGenre[row.genre]) byGenre[row.genre] = { genre: row.genre, years: {} };
+      if (!byGenre[row.genre]) byGenre[row.genre] = { genre: row.genre, years: {} };
       byGenre[row.genre].years[row.year] = { units_sold: row.units_sold, revenue: row.revenue };
     }
     res.json({ month: currentMonth, genres: Object.values(byGenre) });

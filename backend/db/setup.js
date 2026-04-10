@@ -16,7 +16,7 @@ async function setup() {
   const statements = schema
     .split(';')
     .map(s => s.trim())
-    .filter(s => s.length > 0 && \!s.startsWith('--'));
+    .filter(s => s.length > 0 && !s.startsWith('--'));
 
   const config = {
     host: process.env.DB_HOST || 'localhost',

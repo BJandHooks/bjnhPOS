@@ -105,10 +105,10 @@ function extractReturning(sql) {
  * MySQL's JSON columns need strings, not native JS arrays/objects.
  */
 function serializeParams(params) {
-  if (\!params) return params;
+  if (!params) return params;
   return params.map(p => {
     if (p === null || p === undefined) return p;
-    if (Array.isArray(p) || (typeof p === 'object' && \!(p instanceof Date))) {
+    if (Array.isArray(p) || (typeof p === 'object' && !(p instanceof Date))) {
       return JSON.stringify(p);
     }
     return p;

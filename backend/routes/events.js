@@ -77,7 +77,7 @@ router.get('/:id', auth, async (req, res) => {
       [req.params.id]
     );
 
-    if (\!eventRes.rows[0]) return res.status(404).json({ error: 'Event not found' });
+    if (!eventRes.rows[0]) return res.status(404).json({ error: 'Event not found' });
 
     const event = eventRes.rows[0];
 
@@ -170,7 +170,7 @@ router.patch('/:id', auth, requireRole('owner', 'manager'), async (req, res) => 
       [title, description, start_date, end_date, location, capacity, price, status, req.params.id]
     );
 
-    if (\!result.rows[0]) return res.status(404).json({ error: 'Event not found' });
+    if (!result.rows[0]) return res.status(404).json({ error: 'Event not found' });
 
     await log(req.user.id, 'update_event', 'events', req.params.id);
 
@@ -186,7 +186,7 @@ router.post('/:id/register', auth, async (req, res) => {
 
   try {
     const eventRes = await db.query('SELECT * FROM events WHERE id = $1', [req.params.id]);
-    if (\!eventRes.rows[0]) return res.status(404).json({ error: 'Event not found' });
+    if (!eventRes.rows[0]) return res.status(404).json({ error: 'Event not found' });
 
     const event = eventRes.rows[0];
 
@@ -235,7 +235,7 @@ router.post('/:id/check-in/:registration_id', auth, requireRole('owner', 'manage
       [req.params.registration_id, req.params.id]
     );
 
-    if (\!result.rows[0]) return res.status(404).json({ error: 'Registration not found' });
+    if (!result.rows[0]) return res.status(404).json({ error: 'Registration not found' });
 
     await log(req.user.id, 'check_in_event', 'event_registrations', req.params.registration_id);
 

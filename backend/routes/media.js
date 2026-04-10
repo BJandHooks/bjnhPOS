@@ -8,7 +8,7 @@ router.post('/upload', auth, async (req, res) => {
   const { inventory_id, file_path, file_type, file_size } = req.body;
 
   try {
-    if (\!inventory_id || \!file_path || \!file_type) {
+    if (!inventory_id || !file_path || !file_type) {
       return res.status(400).json({ error: 'inventory_id, file_path, and file_type are required' });
     }
 
@@ -92,7 +92,7 @@ router.patch('/queue/:id/approve', auth, requireRole('owner', 'manager'), async 
       [req.user.id, req.params.id]
     );
 
-    if (\!result.rows[0]) return res.status(404).json({ error: 'Content not found' });
+    if (!result.rows[0]) return res.status(404).json({ error: 'Content not found' });
 
     res.json(result.rows[0]);
   } catch (err) {
@@ -108,7 +108,7 @@ router.patch('/queue/:id/remove', auth, requireRole('owner', 'manager'), async (
       [req.params.id]
     );
 
-    if (\!result.rows[0]) return res.status(404).json({ error: 'Content not found' });
+    if (!result.rows[0]) return res.status(404).json({ error: 'Content not found' });
 
     res.json(result.rows[0]);
   } catch (err) {
@@ -172,7 +172,7 @@ router.patch('/posts/:id/update-performance', auth, async (req, res) => {
       [views || 0, likes || 0, req.params.id]
     );
 
-    if (\!result.rows[0]) return res.status(404).json({ error: 'Post not found' });
+    if (!result.rows[0]) return res.status(404).json({ error: 'Post not found' });
 
     res.json(result.rows[0]);
   } catch (err) {
@@ -232,7 +232,7 @@ router.patch('/captions/:id/approve', auth, requireRole('owner', 'manager'), asy
       [req.params.id]
     );
 
-    if (\!result.rows[0]) return res.status(404).json({ error: 'Caption not found' });
+    if (!result.rows[0]) return res.status(404).json({ error: 'Caption not found' });
 
     res.json(result.rows[0]);
   } catch (err) {
@@ -308,7 +308,7 @@ router.post('/autopilot-schedule', auth, requireRole('owner', 'manager'), async 
     const result = await db.query(
       `INSERT INTO social_autopilot_schedules (platform, post_time, randomize_caption)
        VALUES ($1, $2, $3) RETURNING *`,
-      [platform, post_time, randomize_caption \!== false]
+      [platform, post_time, randomize_caption !== false]
     );
 
     await log(req.user.id, 'create_autopilot_schedule', 'social_autopilot_schedules', result.rows[0].id);

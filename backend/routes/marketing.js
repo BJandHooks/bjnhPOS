@@ -11,7 +11,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const auth = require('../middleware/auth');
+const { auth } = require('../middleware/auth');
 const fetch = require('node-fetch');
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -23,7 +23,7 @@ async function getConnection(platform) {
 
 // Refresh a Meta (FB/IG) long-lived token if close to expiry
 async function refreshMetaToken(conn) {
-  if (\!conn.token_expires_at) return conn.access_token;
+  if (!conn.token_expires_at) return conn.access_token;
   const expiresAt = new Date(conn.token_expires_at);
   const hoursLeft = (expiresAt - Date.now()) / 3600000;
   if (hoursLeft > 24) return conn.access_token;
@@ -79,7 +79,7 @@ router.get('/oauth/facebook/callback', async (req, res) => {
     const pagesRes = await fetch(`https://graph.facebook.com/v19.0/me/accounts?access_token=${longToken}`);
     const pagesData = await pagesRes.json();
     const page = pagesData.data?.[0];
-    if (\!page) return res.status(400).json({ error: 'No Facebook Page found on this account.' });
+    if (!page) return res.status(400).json({ error: 'No Facebook Page found on this account.' });
     const pageToken = page.access_token;
     // Get linked Instagram account
     const igRes = await fetch(`https://graph.facebook.com/v19.0/${page.id}?fields=instagram_business_account&access_token=${pageToken}`);
@@ -151,7 +151,7 @@ router.get('/oauth/tiktok/callback', async (req, res) => {
 router.post('/oauth/tiktok/refresh', auth, async (req, res) => {
   try {
     const conn = await getConnection('tiktok');
-    if (\!conn?.refresh_token) return res.status(400).json({ error: 'No refresh token stored' });
+    if (!conn?.refresh_token) return res.status(400).json({ error: 'No refresh token stored' });
     const r = await fetch('https://open.tiktokapis.com/v2/oauth/token/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -218,7 +218,7 @@ router.get('/oauth/google/callback', async (req, res) => {
 // Refresh Google token
 async function refreshGoogleToken() {
   const conn = await getConnection('google_business');
-  if (\!conn?.refresh_token) return null;
+  if (!conn?.refresh_token) return null;
   const r = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -259,7 +259,7 @@ router.get('/posts', auth, async (req, res) => {
 // POST /api/marketing/posts — create draft or scheduled post
 router.post('/posts', auth, async (req, res) => {
   const { title, caption, media_url, media_type='image', platforms, scheduled_at, track='prime', inventory_id, event_id } = req.body;
-  if (\!caption || \!platforms?.length) return res.status(400).json({ error: 'caption and platforms required' });
+  if (!caption || !platforms?.length) return res.status(400).json({ error: 'caption and platforms required' });
   try {
     const r = await db.query(`
       INSERT INTO marketing_posts (title,caption,media_url,media_type,platforms,status,scheduled_at,track,inventory_id,event_id,created_by)
@@ -298,7 +298,7 @@ router.delete('/posts/:id', auth, async (req, res) => {
 router.post('/posts/:id/publish', auth, async (req, res) => {
   try {
     const postRes = await db.query('SELECT * FROM marketing_posts WHERE id=$1', [req.params.id]);
-    if (\!postRes.rows.length) return res.status(404).json({ error: 'Post not found' });
+    if (!postRes.rows.length) return res.status(404).json({ error: 'Post not found' });
     const post = postRes.rows[0];
     await db.query("UPDATE marketing_posts SET status='publishing', updated_at=NOW() WHERE id=$1", [post.id]);
 
@@ -332,7 +332,7 @@ router.post('/posts/:id/publish', auth, async (req, res) => {
 // ── Facebook publish ─────────────────────────────────────────────────────────
 async function publishToFacebook(post) {
   const conn = await getConnection('facebook');
-  if (\!conn?.is_connected) throw new Error('Facebook not connected');
+  if (!conn?.is_connected) throw new Error('Facebook not connected');
   const token = await refreshMetaToken(conn);
   const pageId = conn.page_id;
   let endpoint, body;
@@ -355,10 +355,10 @@ async function publishToFacebook(post) {
 // ── Instagram publish ────────────────────────────────────────────────────────
 async function publishToInstagram(post) {
   const conn = await getConnection('instagram');
-  if (\!conn?.is_connected || \!conn.instagram_account_id) throw new Error('Instagram not connected');
+  if (!conn?.is_connected || !conn.instagram_account_id) throw new Error('Instagram not connected');
   const token = await refreshMetaToken(conn);
   const igId = conn.instagram_account_id;
-  if (\!post.media_url) throw new Error('Instagram requires a media URL');
+  if (!post.media_url) throw new Error('Instagram requires a media URL');
   // Step 1: create container
   const containerBody = post.media_type === 'video' || post.media_type === 'reel'
     ? { media_type: 'REELS', video_url: post.media_url, caption: post.caption, access_token: token }
@@ -376,8 +376,8 @@ async function publishToInstagram(post) {
 // ── TikTok publish ───────────────────────────────────────────────────────────
 async function publishToTikTok(post) {
   const conn = await getConnection('tiktok');
-  if (\!conn?.is_connected) throw new Error('TikTok not connected');
-  if (\!post.media_url) throw new Error('TikTok requires a video URL');
+  if (!conn?.is_connected) throw new Error('TikTok not connected');
+  if (!post.media_url) throw new Error('TikTok requires a video URL');
   const token = conn.access_token;
   // TikTok Content Posting API — URL-based upload
   const initRes = await fetch('https://open.tiktokapis.com/v2/post/publish/video/init/', {
@@ -386,14 +386,14 @@ async function publishToTikTok(post) {
     body: JSON.stringify({ post_info: { title: post.caption.slice(0,150), privacy_level:'PUBLIC_TO_EVERYONE', disable_duet:false, disable_comment:false, disable_stitch:false }, source_info: { source:'PULL_FROM_URL', video_url: post.media_url } }),
   });
   const initData = await initRes.json();
-  if (initData.error?.code \!== 'ok' && initData.error) throw new Error(initData.error.message || 'TikTok publish failed');
+  if (initData.error?.code !== 'ok' && initData.error) throw new Error(initData.error.message || 'TikTok publish failed');
   return { id: initData.data?.publish_id, url: 'https://www.tiktok.com' };
 }
 
 // ── Google My Business publish ───────────────────────────────────────────────
 async function publishToGoogleBusiness(post) {
   const conn = await getConnection('google_business');
-  if (\!conn?.is_connected || \!conn.page_id) throw new Error('Google Business not connected');
+  if (!conn?.is_connected || !conn.page_id) throw new Error('Google Business not connected');
   let token = conn.access_token;
   // Refresh if expired
   if (conn.token_expires_at && new Date(conn.token_expires_at) < new Date()) token = await refreshGoogleToken();
@@ -428,7 +428,7 @@ router.post('/captions', auth, async (req, res) => {
   try {
     const inserted = [];
     for (const caption of list) {
-      if (\!caption?.trim()) continue;
+      if (!caption?.trim()) continue;
       const r = await db.query('INSERT INTO caption_pool (caption,tags,created_by) VALUES ($1,$2,$3) RETURNING *', [caption.trim(), tags || [], req.user.id]);
       inserted.push(r.rows[0]);
     }
@@ -455,7 +455,7 @@ router.delete('/captions/:id', auth, async (req, res) => {
 router.get('/captions/random', auth, async (req, res) => {
   try {
     const r = await db.query('SELECT * FROM caption_pool WHERE approved=true ORDER BY used_count ASC, last_used_at ASC  LIMIT 1');
-    if (\!r.rows.length) return res.status(404).json({ error: 'No approved captions in pool' });
+    if (!r.rows.length) return res.status(404).json({ error: 'No approved captions in pool' });
     const caption = r.rows[0];
     await db.query('UPDATE caption_pool SET used_count=used_count+1, last_used_at=NOW() WHERE id=$1', [caption.id]);
     res.json(caption);
@@ -475,7 +475,7 @@ router.get('/event-listings', auth, async (req, res) => {
 // POST /api/marketing/event-listings — create listing record
 router.post('/event-listings', auth, async (req, res) => {
   const { event_id, platform, title, description, start_time, end_time, location, cover_image_url, ticket_url } = req.body;
-  if (\!platform || \!title || \!start_time) return res.status(400).json({ error: 'platform, title, start_time required' });
+  if (!platform || !title || !start_time) return res.status(400).json({ error: 'platform, title, start_time required' });
   try {
     const r = await db.query(`
       INSERT INTO local_event_listings (event_id,platform,title,description,start_time,end_time,location,cover_image_url,ticket_url)
@@ -489,7 +489,7 @@ router.post('/event-listings', auth, async (req, res) => {
 router.post('/event-listings/:id/publish', auth, async (req, res) => {
   try {
     const listingRes = await db.query('SELECT * FROM local_event_listings WHERE id=$1', [req.params.id]);
-    if (\!listingRes.rows.length) return res.status(404).json({ error: 'Not found' });
+    if (!listingRes.rows.length) return res.status(404).json({ error: 'Not found' });
     const listing = listingRes.rows[0];
     let result;
     if (listing.platform === 'facebook') result = await publishFBEvent(listing);
@@ -512,7 +512,7 @@ router.patch('/event-listings/:id/sync', auth, async (req, res) => {
 // ── Facebook Event publish ────────────────────────────────────────────────────
 async function publishFBEvent(listing) {
   const conn = await getConnection('facebook');
-  if (\!conn?.is_connected) throw new Error('Facebook not connected');
+  if (!conn?.is_connected) throw new Error('Facebook not connected');
   const token = await refreshMetaToken(conn);
   const pageId = conn.page_id;
   const body = {
@@ -534,7 +534,7 @@ async function publishFBEvent(listing) {
 // ── Google My Business Event (Local Post) ─────────────────────────────────────
 async function publishGMBEvent(listing) {
   const conn = await getConnection('google_business');
-  if (\!conn?.is_connected || \!conn.page_id) throw new Error('Google Business not connected');
+  if (!conn?.is_connected || !conn.page_id) throw new Error('Google Business not connected');
   let token = conn.access_token;
   if (conn.token_expires_at && new Date(conn.token_expires_at) < new Date()) token = await refreshGoogleToken();
   const body = {

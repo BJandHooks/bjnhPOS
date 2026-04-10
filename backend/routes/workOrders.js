@@ -46,7 +46,7 @@ router.get('/:id', auth, async (req, res) => {
       [req.params.id]
     );
 
-    if (\!woResult.rows[0]) return res.status(404).json({ error: 'Work order not found' });
+    if (!woResult.rows[0]) return res.status(404).json({ error: 'Work order not found' });
 
     const itemsResult = await db.query(
       'SELECT * FROM work_order_items WHERE work_order_id = $1 ORDER BY created_at',
@@ -126,7 +126,7 @@ router.patch('/:id', auth, requireRole('owner', 'manager'), async (req, res) => 
        completed_date || null, req.params.id]
     );
 
-    if (\!result.rows[0]) return res.status(404).json({ error: 'Work order not found' });
+    if (!result.rows[0]) return res.status(404).json({ error: 'Work order not found' });
 
     // Add timeline entry
     if (status) {
@@ -153,7 +153,7 @@ router.post('/:id/mark-ready', auth, requireRole('owner', 'manager'), async (req
       [req.params.id]
     );
 
-    if (\!woResult.rows[0]) return res.status(404).json({ error: 'Work order not found' });
+    if (!woResult.rows[0]) return res.status(404).json({ error: 'Work order not found' });
 
     const wo = woResult.rows[0];
 
@@ -194,7 +194,7 @@ router.post('/:id/pickup', auth, requireRole('owner', 'manager', 'cashier'), asy
       ['picked_up', req.params.id]
     );
 
-    if (\!result.rows[0]) return res.status(404).json({ error: 'Work order not found' });
+    if (!result.rows[0]) return res.status(404).json({ error: 'Work order not found' });
 
     // Add timeline entry
     await db.query(
@@ -231,10 +231,10 @@ router.get('/:id/history', auth, async (req, res) => {
 router.delete('/:id', auth, requireRole('owner', 'manager'), async (req, res) => {
   try {
     const woResult = await db.query('SELECT * FROM work_orders WHERE id = $1', [req.params.id]);
-    if (\!woResult.rows[0]) return res.status(404).json({ error: 'Work order not found' });
+    if (!woResult.rows[0]) return res.status(404).json({ error: 'Work order not found' });
     
     const wo = woResult.rows[0];
-    if (wo.status \!== 'received') {
+    if (wo.status !== 'received') {
       return res.status(400).json({ error: 'Cannot delete work orders that have been started' });
     }
 

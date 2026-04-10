@@ -6,10 +6,10 @@ const SECRET = process.env.JWT_SECRET || 'bjnhpos-secret';
 
 function portalAuth(req, res, next) {
   const token = req.headers.authorization?.split(' ')[1];
-  if (\!token) return res.status(401).json({ error: 'No token' });
+  if (!token) return res.status(401).json({ error: 'No token' });
   try {
     const decoded = jwt.verify(token, SECRET);
-    if (decoded.type \!== 'consignor') return res.status(403).json({ error: 'Not a consignor token' });
+    if (decoded.type !== 'consignor') return res.status(403).json({ error: 'Not a consignor token' });
     req.consignor = decoded;
     next();
   } catch { res.status(401).json({ error: 'Invalid token' }); }
@@ -18,15 +18,15 @@ function portalAuth(req, res, next) {
 // POST /api/portal/login
 router.post('/login', async (req, res) => {
   const { email, pin } = req.body;
-  if (\!email || \!pin) return res.status(400).json({ error: 'Email and PIN required' });
+  if (!email || !pin) return res.status(400).json({ error: 'Email and PIN required' });
   try {
     const result = await db.query('SELECT * FROM consignors WHERE LOWER(email)=LOWER($1)', [email.trim()]);
     if (result.rows.length === 0) return res.status(401).json({ error: 'Invalid credentials' });
     const consignor = result.rows[0];
-    if (\!consignor.portal_pin_hash) return res.status(401).json({ error: 'Portal access not set up. Contact the store.' });
+    if (!consignor.portal_pin_hash) return res.status(401).json({ error: 'Portal access not set up. Contact the store.' });
     const bcrypt = require('bcryptjs');
     const match = await bcrypt.compare(String(pin), consignor.portal_pin_hash);
-    if (\!match) return res.status(401).json({ error: 'Invalid credentials' });
+    if (!match) return res.status(401).json({ error: 'Invalid credentials' });
     const token = jwt.sign({ type: 'consignor', id: consignor.id, name: consignor.name, email: consignor.email }, SECRET, { expiresIn: '8h' });
     res.json({ token, consignor: { id: consignor.id, name: consignor.name, email: consignor.email } });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -39,7 +39,7 @@ router.get('/me', portalAuth, async (req, res) => {
       `SELECT id,name,email,phone,split_percentage,booth_fee_monthly,contract_start,payout_schedule,minimum_payout_balance,active FROM consignors WHERE id=$1`,
       [req.consignor.id]
     );
-    if (\!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
     res.json(result.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -111,12 +111,12 @@ router.get('/booth-charges', portalAuth, async (req, res) => {
 // POST /api/portal/admin/set-pin  (staff only — owner/manager)
 router.post('/admin/set-pin', async (req, res) => {
   const token = req.headers.authorization?.split(' ')[1];
-  if (\!token) return res.status(401).json({ error: 'No token' });
+  if (!token) return res.status(401).json({ error: 'No token' });
   try {
     const decoded = jwt.verify(token, SECRET);
-    if (\!['owner','manager'].includes(decoded.role)) return res.status(403).json({ error: 'Insufficient role' });
+    if (!['owner','manager'].includes(decoded.role)) return res.status(403).json({ error: 'Insufficient role' });
     const { consignor_id, pin } = req.body;
-    if (\!consignor_id || \!pin || String(pin).length < 4) return res.status(400).json({ error: 'consignor_id and 4+ digit PIN required' });
+    if (!consignor_id || !pin || String(pin).length < 4) return res.status(400).json({ error: 'consignor_id and 4+ digit PIN required' });
     const bcrypt = require('bcryptjs');
     const hash = await bcrypt.hash(String(pin), 10);
     await db.query('UPDATE consignors SET portal_pin_hash=$1 WHERE id=$2', [hash, consignor_id]);
