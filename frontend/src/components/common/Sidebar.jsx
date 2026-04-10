@@ -11,6 +11,7 @@ const NAV = [
   { label: 'Consignors', path: '/consignors',icon: '◇', roles: ['owner','manager'] },
   { section: 'Services' },
   { label: 'Work Orders', path: '/work-orders', icon: '⚙', roles: ['owner','manager','cashier'] },
+  { label: 'Trading',    path: '/trades',       icon: '↔', roles: ['owner','manager','cashier'] },
   { section: 'Staff' },
   { label: 'Tasks',     path: '/tasks',      icon: '▷', roles: ['owner','manager','cashier'] },
   { label: 'Schedule',  path: '/schedule',   icon: '▤', roles: ['owner','manager','cashier'] },

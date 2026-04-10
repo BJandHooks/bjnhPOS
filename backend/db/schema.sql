@@ -305,3 +305,96 @@ CREATE INDEX idx_work_orders_status ON work_orders(status);
 CREATE INDEX idx_work_orders_assigned_to ON work_orders(assigned_to_user_id);
 CREATE INDEX idx_work_orders_created ON work_orders(created_at);
 CREATE INDEX idx_work_order_items_work_order ON work_order_items(work_order_id);
+
+-- ========================
+-- TRADING SYSTEM (Phase 3)
+-- ========================
+CREATE TABLE trades (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
+  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  total_items INTEGER NOT NULL,
+  items_evaluated INTEGER NOT NULL,
+  offer_amount NUMERIC(10,2) NOT NULL,
+  offer_accepted BOOLEAN,
+  accepted_at TIMESTAMP,
+  trade_credit_issued NUMERIC(10,2),
+  trade_credit_method VARCHAR(50) CHECK (trade_credit_method IN ('cash', 'store_credit')),
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE trade_items (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  trade_id UUID REFERENCES trades(id) ON DELETE CASCADE,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  condition VARCHAR(50) CHECK (condition IN ('mint', 'excellent', 'good', 'fair', 'poor')),
+  category VARCHAR(100),
+  estimated_value NUMERIC(10,2),
+  discogs_id VARCHAR(100),
+  discogs_release_id VARCHAR(100),
+  discogs_estimated_price NUMERIC(10,2),
+  included_in_offer BOOLEAN DEFAULT true,
+  rejection_reason VARCHAR(255),
+  is_duplicate BOOLEAN DEFAULT false,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE trade_rejections (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  trade_item_id UUID REFERENCES trade_items(id) ON DELETE CASCADE,
+  reason VARCHAR(100) NOT NULL CHECK (reason IN ('condition', 'demand', 'duplicates', 'other')),
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE trade_history (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  customer_id UUID REFERENCES customers(id) ON DELETE CASCADE,
+  trade_id UUID REFERENCES trades(id) ON DELETE CASCADE,
+  total_items INTEGER,
+  offer_amount NUMERIC(10,2),
+  offer_accepted BOOLEAN,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE banned_customers (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  customer_id UUID REFERENCES customers(id) ON DELETE CASCADE,
+  reason TEXT,
+  banned_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE trade_fraud_flags (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  trade_id UUID REFERENCES trades(id) ON DELETE CASCADE,
+  flag_type VARCHAR(100) NOT NULL CHECK (flag_type IN ('high_value', 'repeat_trader', 'unusual_pattern')),
+  severity VARCHAR(50) CHECK (severity IN ('low', 'medium', 'high')),
+  description TEXT,
+  reviewed BOOLEAN DEFAULT false,
+  reviewed_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  reviewed_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE popular_trade_items (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  title VARCHAR(255) NOT NULL,
+  category VARCHAR(100),
+  trade_count INTEGER DEFAULT 1,
+  last_traded_at TIMESTAMP DEFAULT NOW(),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Indexes for trading system
+CREATE INDEX idx_trades_customer ON trades(customer_id);
+CREATE INDEX idx_trades_user ON trades(user_id);
+CREATE INDEX idx_trades_created ON trades(created_at);
+CREATE INDEX idx_trade_items_trade ON trade_items(trade_id);
+CREATE INDEX idx_trade_items_discogs ON trade_items(discogs_id);
+CREATE INDEX idx_trade_history_customer ON trade_history(customer_id);
+CREATE INDEX idx_banned_customers_customer ON banned_customers(customer_id);
+CREATE INDEX idx_trade_fraud_flags_trade ON trade_fraud_flags(trade_id);
+CREATE INDEX idx_popular_trade_items_title ON popular_trade_items(title);
