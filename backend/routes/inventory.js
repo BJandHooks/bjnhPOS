@@ -112,7 +112,7 @@ router.post('/bulk-import', auth, requireRole('owner', 'manager'), async (req, r
         `INSERT INTO inventory
          (title, description, condition, category, price, original_price, consignor_id, expiration_date, barcode)
          VALUES ($1, $2, $3, $4, $5, $5, $6, $7, $8)
-         ON CONFLICT (barcode) DO NOTHING RETURNING *`,
+         ON DUPLICATE KEY UPDATE barcode=barcode RETURNING *`,
         [item.title, item.description, item.condition, item.category, item.price,
          item.consignor_id || null, item.expiration_date || null, item.barcode || null]
       );

@@ -11,7 +11,7 @@ router.get('/', auth, async (req, res) => {
        LEFT JOIN users u1 ON u1.id = t.assigned_to_user_id
        LEFT JOIN users u2 ON u2.id = t.assigned_by_user_id
        WHERE t.assigned_to_user_id = $1 OR $2 = 'owner' OR $2 = 'manager'
-       ORDER BY t.due_date ASC NULLS LAST, t.created_at DESC`,
+       ORDER BY t.due_date ASC /* MySQL: NULLs sort first on ASC */, t.created_at DESC`,
       [req.user.id, req.user.role]
     );
     res.json(result.rows);

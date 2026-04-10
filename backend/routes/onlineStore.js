@@ -48,7 +48,7 @@ router.post('/list-item', auth, requireRole('owner', 'manager'), async (req, res
     const statusRes = await db.query(
       `INSERT INTO inventory_online_status (inventory_id, is_online, online_platforms)
        VALUES ($1, true, $2)
-       ON CONFLICT (inventory_id) DO UPDATE SET is_online = true, online_platforms = $2, updated_at = NOW()
+       ON DUPLICATE KEY UPDATE is_online = 1, online_platforms = VALUES(online_platforms), updated_at = NOW()
        RETURNING *`,
       [inventory_id, (platforms || []).join(',')]
     );
@@ -256,7 +256,7 @@ router.post('/run-health-check', auth, requireRole('owner'), async (req, res) =>
       await db.query(
         `INSERT INTO website_monitoring (check_type, status, last_checked_at)
          VALUES ($1, $2, NOW())
-         ON CONFLICT (check_type) DO UPDATE SET status = $2, last_checked_at = NOW()`,
+         ON DUPLICATE KEY UPDATE status = VALUES(status), last_checked_at = NOW()`,
         [check.type, check.status]
       );
     }

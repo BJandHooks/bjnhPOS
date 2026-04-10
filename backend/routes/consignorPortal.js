@@ -52,12 +52,13 @@ router.get('/items', portalAuth, async (req, res) => {
       [req.consignor.id]
     );
     const summary = await db.query(
-      `SELECT COUNT(*) FILTER (WHERE status='available') AS available,
-        COUNT(*) FILTER (WHERE status='sold') AS sold,
-        COUNT(*) FILTER (WHERE status='expired') AS expired,
-        COUNT(*) FILTER (WHERE expiration_date < NOW() AND status='available') AS expiring_soon,
-        ROUND(SUM(price) FILTER (WHERE status='available')::numeric,2) AS inventory_value,
-        ROUND(SUM(price) FILTER (WHERE status='sold')::numeric,2) AS sold_value
+      `SELECT
+         SUM(CASE WHEN status='available' THEN 1 ELSE 0 END) AS available,
+         SUM(CASE WHEN status='sold' THEN 1 ELSE 0 END) AS sold,
+         SUM(CASE WHEN status='expired' THEN 1 ELSE 0 END) AS expired,
+         SUM(CASE WHEN expiration_date < NOW() AND status='available' THEN 1 ELSE 0 END) AS expiring_soon,
+         ROUND(SUM(CASE WHEN status='available' THEN price ELSE 0 END), 2) AS inventory_value,
+         ROUND(SUM(CASE WHEN status='sold' THEN price ELSE 0 END), 2) AS sold_value
        FROM inventory WHERE consignor_id=$1`,
       [req.consignor.id]
     );

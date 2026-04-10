@@ -67,9 +67,9 @@ router.get('/consignors', auth, requireRole('owner', 'manager'), async (req, res
   try {
     const result = await db.query(
       `SELECT c.id, c.name, c.balance, c.split_percentage, c.booth_fee_monthly,
-              COUNT(i.id) FILTER (WHERE i.status = 'active') as active_items,
-              COUNT(i.id) FILTER (WHERE i.status = 'sold') as sold_items,
-              COALESCE(SUM(si.price_at_sale) FILTER (WHERE i.status = 'sold'), 0) as total_sold_value,
+              SUM(CASE WHEN i.status = 'active' THEN 1 ELSE 0 END) as active_items,
+              SUM(CASE WHEN i.status = 'sold' THEN 1 ELSE 0 END) as sold_items,
+              COALESCE(SUM(CASE WHEN i.status = 'sold' THEN si.price_at_sale ELSE 0 END), 0) as total_sold_value,
               COALESCE(SUM(cp.amount), 0) as total_paid_out
        FROM consignors c
        LEFT JOIN inventory i ON i.consignor_id = c.id

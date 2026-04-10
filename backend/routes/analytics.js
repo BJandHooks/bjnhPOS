@@ -18,7 +18,7 @@ router.get('/sales-velocity', auth, async (req, res) => {
         COALESCE(i.genre, 'Unknown') AS genre,
         COUNT(si.id) AS units_sold,
         ROUND(COUNT(si.id)::numeric /
-          NULLIF(EXTRACT(EPOCH FROM ($2::timestamptz - $1::timestamptz)) / 604800, 0), 2
+          NULLIF(TIMESTAMPDIFF(SECOND, $1, $2) / 604800, 0), 2
         ) AS units_per_week,
         SUM(si.sale_price) AS total_revenue
       FROM sale_items si
@@ -70,8 +70,8 @@ router.get('/peak-times', auth, async (req, res) => {
     const { start, end } = dateRange(req.query);
     const [byHour, byDay, byMonth] = await Promise.all([
       db.query(`SELECT EXTRACT(HOUR FROM created_at) AS hour, COUNT(*) AS transaction_count, ROUND(AVG(total)::numeric,2) AS avg_transaction FROM sales WHERE created_at BETWEEN $1 AND $2 AND status='complete' GROUP BY hour ORDER BY hour`, [start, end]),
-      db.query(`SELECT TO_CHAR(created_at,'Day') AS day_name, EXTRACT(DOW FROM created_at) AS day_num, COUNT(*) AS transaction_count, ROUND(AVG(total)::numeric,2) AS avg_transaction FROM sales WHERE created_at BETWEEN $1 AND $2 AND status='complete' GROUP BY day_name,day_num ORDER BY day_num`, [start, end]),
-      db.query(`SELECT TO_CHAR(created_at,'Mon') AS month_name, EXTRACT(MONTH FROM created_at) AS month_num, COUNT(*) AS transaction_count, ROUND(SUM(total)::numeric,2) AS total_revenue FROM sales WHERE created_at BETWEEN $1 AND $2 AND status='complete' GROUP BY month_name,month_num ORDER BY month_num`, [start, end]),
+      db.query(`SELECT DAYNAME(created_at) AS day_name, EXTRACT(DOW FROM created_at) AS day_num, COUNT(*) AS transaction_count, ROUND(AVG(total)::numeric,2) AS avg_transaction FROM sales WHERE created_at BETWEEN $1 AND $2 AND status='complete' GROUP BY day_name,day_num ORDER BY day_num`, [start, end]),
+      db.query(`SELECT DATE_FORMAT(created_at, '%b') AS month_name, EXTRACT(MONTH FROM created_at) AS month_num, COUNT(*) AS transaction_count, ROUND(SUM(total)::numeric,2) AS total_revenue FROM sales WHERE created_at BETWEEN $1 AND $2 AND status='complete' GROUP BY month_name,month_num ORDER BY month_num`, [start, end]),
     ]);
     res.json({ by_hour: byHour.rows, by_day: byDay.rows, by_month: byMonth.rows });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -102,13 +102,24 @@ router.get('/avg-transaction', auth, async (req, res) => {
   try {
     const { start, end } = dateRange(req.query);
     const result = await db.query(`
-      SELECT COUNT(*) AS total_transactions, ROUND(AVG(total)::numeric,2) AS avg_transaction_value,
-        ROUND(MIN(total)::numeric,2) AS min_transaction, ROUND(MAX(total)::numeric,2) AS max_transaction,
-        ROUND(SUM(total)::numeric,2) AS total_revenue,
-        ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY total)::numeric,2) AS median_transaction
+      SELECT COUNT(*) AS total_transactions,
+        ROUND(AVG(total),2) AS avg_transaction_value,
+        ROUND(MIN(total),2) AS min_transaction,
+        ROUND(MAX(total),2) AS max_transaction,
+        ROUND(SUM(total),2) AS total_revenue
       FROM sales WHERE created_at BETWEEN $1 AND $2 AND status='complete'
     `, [start, end]);
-    res.json(result.rows[0]);
+    // MySQL median: AVG of middle row(s)
+    const medianResult = await db.query(`
+      SELECT ROUND(AVG(t.total),2) AS median_transaction FROM (
+        SELECT total FROM sales
+        WHERE created_at BETWEEN $1 AND $2 AND status='complete'
+        ORDER BY total
+        LIMIT 2 - (SELECT COUNT(*) FROM sales WHERE created_at BETWEEN $1 AND $2 AND status='complete') % 2
+        OFFSET FLOOR((SELECT COUNT(*) FROM sales WHERE created_at BETWEEN $1 AND $2 AND status='complete') / 2)
+      ) t
+    `, [start, end, start, end, start, end]);
+    res.json({ ...result.rows[0], median_transaction: medianResult.rows[0]?.median_transaction });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -134,7 +145,7 @@ router.get('/seasonal-trends', auth, async (req, res) => {
   try {
     const result = await db.query(`
       SELECT EXTRACT(YEAR FROM created_at) AS year, EXTRACT(QUARTER FROM created_at) AS quarter,
-        TO_CHAR(created_at,'YYYY-Q') AS label, COUNT(*) AS transactions,
+        CONCAT(YEAR(created_at), '-', QUARTER(created_at)) AS label, COUNT(*) AS transactions,
         ROUND(SUM(total)::numeric,2) AS revenue, ROUND(AVG(total)::numeric,2) AS avg_sale
       FROM sales WHERE status='complete' GROUP BY year,quarter,label ORDER BY year,quarter
     `);
@@ -147,7 +158,7 @@ router.get('/year-over-year', auth, async (req, res) => {
   try {
     const result = await db.query(`
       SELECT EXTRACT(YEAR FROM created_at) AS year, EXTRACT(MONTH FROM created_at) AS month,
-        TO_CHAR(created_at,'Mon') AS month_name, COUNT(*) AS transactions, ROUND(SUM(total)::numeric,2) AS revenue
+        DATE_FORMAT(created_at, '%b') AS month_name, COUNT(*) AS transactions, ROUND(SUM(total)::numeric,2) AS revenue
       FROM sales WHERE status='complete' GROUP BY year,month,month_name ORDER BY year,month
     `);
     const byMonth = {};
@@ -169,11 +180,11 @@ router.get('/inventory-turnover', auth, async (req, res) => {
         COUNT(DISTINCT si.inventory_id) AS units_sold,
         COUNT(DISTINCT inv.id) AS current_stock,
         ROUND(COUNT(DISTINCT si.inventory_id)::numeric / NULLIF(COUNT(DISTINCT inv.id),0),2) AS turnover_ratio,
-        ROUND(AVG(EXTRACT(EPOCH FROM (s.created_at - inv.created_at))/86400)::numeric,1) AS avg_days_to_sell
+        ROUND(AVG(TIMESTAMPDIFF(SECOND, inv.created_at, s.created_at)/86400),1) AS avg_days_to_sell
       FROM inventory inv
       LEFT JOIN sale_items si ON si.inventory_id=inv.id
       LEFT JOIN sales s ON si.sale_id=s.id AND s.created_at BETWEEN $1 AND $2 AND s.status='complete'
-      GROUP BY inv.category ORDER BY turnover_ratio DESC NULLS LAST
+      GROUP BY inv.category ORDER BY turnover_ratio DESC /* MySQL: NULLs sort first on ASC */
     `, [start, end]);
     res.json(result.rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -226,7 +237,7 @@ router.get('/predictive-inventory', auth, async (req, res) => {
           WHEN COALESCE(s.current_stock,0)::numeric/NULLIF(v.units_per_week,0)<4 THEN 'Low - watch this'
           ELSE 'OK' END AS suggestion
       FROM velocity v LEFT JOIN stock s USING (genre,category)
-      WHERE v.units_per_week > 0 ORDER BY weeks_of_stock_remaining ASC NULLS FIRST
+      WHERE v.units_per_week > 0 ORDER BY weeks_of_stock_remaining ASC /* MySQL: NULLs sort last on DESC */
     `);
     res.json(result.rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -290,7 +301,7 @@ router.get('/customer-purchase-patterns', auth, async (req, res) => {
       db.query(`
         SELECT ROUND(AVG(gap_days)::numeric,1) AS avg_days_between_purchases
         FROM (SELECT customer_id,
-          EXTRACT(EPOCH FROM (created_at - LAG(created_at) OVER (PARTITION BY customer_id ORDER BY created_at)))/86400 AS gap_days
+          TIMESTAMPDIFF(SECOND, LAG(created_at) OVER (PARTITION BY customer_id ORDER BY created_at), created_at)/86400 AS gap_days
           FROM sales WHERE status='complete' AND customer_id IS NOT NULL) sub WHERE gap_days IS NOT NULL
       `),
       db.query(`
@@ -303,7 +314,7 @@ router.get('/customer-purchase-patterns', auth, async (req, res) => {
       db.query(`
         SELECT COUNT(DISTINCT customer_id) AS at_risk_customers FROM sales
         WHERE status='complete' AND customer_id IS NOT NULL
-          AND created_at BETWEEN $1::timestamptz-($2::timestamptz-$1::timestamptz) AND $1
+          AND created_at BETWEEN DATE_SUB($1, INTERVAL TIMESTAMPDIFF(SECOND, $1, $2) SECOND) AND $1
           AND customer_id NOT IN (
             SELECT DISTINCT customer_id FROM sales WHERE status='complete' AND customer_id IS NOT NULL AND created_at BETWEEN $1 AND $2
           )

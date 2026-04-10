@@ -12,7 +12,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const auth = require('../middleware/auth');
-const fetch = (...args) => import('node-fetch').then(({default: f}) => f(...args));
+const fetch = require('node-fetch');
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -88,15 +88,15 @@ router.get('/oauth/facebook/callback', async (req, res) => {
     // Save Facebook
     await db.query(`
       INSERT INTO platform_connections (platform,access_token,token_expires_at,page_id,page_name,is_connected,connected_at)
-      VALUES ('facebook',$1,$2,$3,$4,true,NOW())
-      ON CONFLICT (platform) DO UPDATE SET access_token=$1,token_expires_at=$2,page_id=$3,page_name=$4,is_connected=true,connected_at=NOW(),updated_at=NOW()
+      VALUES ('facebook',$1,$2,$3,$4,1,NOW())
+      ON DUPLICATE KEY UPDATE access_token=VALUES(access_token),token_expires_at=VALUES(token_expires_at),page_id=VALUES(page_id),page_name=VALUES(page_name),is_connected=1,connected_at=NOW(),updated_at=NOW()
     `, [pageToken, expires, page.id, page.name]);
     // Save Instagram (shares FB page token, different account ID)
     if (igAccountId) {
       await db.query(`
         INSERT INTO platform_connections (platform,access_token,token_expires_at,page_id,instagram_account_id,page_name,is_connected,connected_at)
-        VALUES ('instagram',$1,$2,$3,$4,$5,true,NOW())
-        ON CONFLICT (platform) DO UPDATE SET access_token=$1,token_expires_at=$2,page_id=$3,instagram_account_id=$4,page_name=$5,is_connected=true,connected_at=NOW(),updated_at=NOW()
+        VALUES ('instagram',$1,$2,$3,$4,$5,1,NOW())
+        ON DUPLICATE KEY UPDATE access_token=VALUES(access_token),token_expires_at=VALUES(token_expires_at),page_id=VALUES(page_id),instagram_account_id=VALUES(instagram_account_id),page_name=VALUES(page_name),is_connected=1,connected_at=NOW(),updated_at=NOW()
       `, [pageToken, expires, page.id, igAccountId, page.name + ' (Instagram)']);
     }
     res.redirect(`${process.env.BASE_URL}/marketing?connected=facebook`);
@@ -140,8 +140,8 @@ router.get('/oauth/tiktok/callback', async (req, res) => {
     const displayName = userData.data?.user?.display_name || 'TikTok Account';
     await db.query(`
       INSERT INTO platform_connections (platform,access_token,refresh_token,token_expires_at,page_id,page_name,is_connected,connected_at)
-      VALUES ('tiktok',$1,$2,$3,$4,$5,true,NOW())
-      ON CONFLICT (platform) DO UPDATE SET access_token=$1,refresh_token=$2,token_expires_at=$3,page_id=$4,page_name=$5,is_connected=true,connected_at=NOW(),updated_at=NOW()
+      VALUES ('tiktok',$1,$2,$3,$4,$5,1,NOW())
+      ON DUPLICATE KEY UPDATE access_token=VALUES(access_token),refresh_token=VALUES(refresh_token),token_expires_at=VALUES(token_expires_at),page_id=VALUES(page_id),page_name=VALUES(page_name),is_connected=1,connected_at=NOW(),updated_at=NOW()
     `, [access_token, refresh_token, expires, open_id, displayName]);
     res.redirect(`${process.env.BASE_URL}/marketing?connected=tiktok`);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -208,8 +208,8 @@ router.get('/oauth/google/callback', async (req, res) => {
     }
     await db.query(`
       INSERT INTO platform_connections (platform,access_token,refresh_token,token_expires_at,page_id,page_name,is_connected,connected_at)
-      VALUES ('google_business',$1,$2,$3,$4,$5,true,NOW())
-      ON CONFLICT (platform) DO UPDATE SET access_token=$1,refresh_token=$2,token_expires_at=$3,page_id=$4,page_name=$5,is_connected=true,connected_at=NOW(),updated_at=NOW()
+      VALUES ('google_business',$1,$2,$3,$4,$5,1,NOW())
+      ON DUPLICATE KEY UPDATE access_token=VALUES(access_token),refresh_token=VALUES(refresh_token),token_expires_at=VALUES(token_expires_at),page_id=VALUES(page_id),page_name=VALUES(page_name),is_connected=1,connected_at=NOW(),updated_at=NOW()
     `, [access_token, refresh_token, expires, locationId, locationName]);
     res.redirect(`${process.env.BASE_URL}/marketing?connected=google`);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -454,7 +454,7 @@ router.delete('/captions/:id', auth, async (req, res) => {
 // GET /api/marketing/captions/random — pull one approved caption for autopilot
 router.get('/captions/random', auth, async (req, res) => {
   try {
-    const r = await db.query('SELECT * FROM caption_pool WHERE approved=true ORDER BY used_count ASC, last_used_at ASC NULLS FIRST LIMIT 1');
+    const r = await db.query('SELECT * FROM caption_pool WHERE approved=true ORDER BY used_count ASC, last_used_at ASC  LIMIT 1');
     if (\!r.rows.length) return res.status(404).json({ error: 'No approved captions in pool' });
     const caption = r.rows[0];
     await db.query('UPDATE caption_pool SET used_count=used_count+1, last_used_at=NOW() WHERE id=$1', [caption.id]);
