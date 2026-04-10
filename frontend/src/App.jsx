@@ -10,6 +10,7 @@ import Consignors from './pages/Consignors';
 import WorkOrders from './pages/WorkOrders';
 import Trades from './pages/Trades';
 import Imports from './pages/Imports';
+import Events from './pages/Events';
 import { Staff, Tasks, Schedule, TimeClock, Reports, Activity } from './pages/StaffPages';
 import './index.css';
 
@@ -28,6 +29,7 @@ function ProtectedLayout() {
           <Route path="/work-orders" element={<WorkOrders />} />
           <Route path="/trades"     element={<Trades />} />
           <Route path="/imports"    element={<Imports />} />
+          <Route path="/events"     element={<Events />} />
           <Route path="/staff"      element={<Staff />} />
           <Route path="/tasks"      element={<Tasks />} />
           <Route path="/schedule"   element={<Schedule />} />

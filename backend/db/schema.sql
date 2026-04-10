@@ -427,3 +427,96 @@ CREATE INDEX idx_import_jobs_user ON import_jobs(user_id);
 CREATE INDEX idx_import_jobs_type ON import_jobs(import_type);
 CREATE INDEX idx_import_jobs_created ON import_jobs(created_at);
 CREATE INDEX idx_import_errors_job ON import_errors(import_job_id);
+
+-- ========================
+-- EVENTS & TICKETING (Phase 5)
+-- ========================
+CREATE TABLE events (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  event_type VARCHAR(50) NOT NULL CHECK (event_type IN ('off_site', 'in_store_class', 'in_store_performance', 'workshop', 'recurring')),
+  start_date TIMESTAMP NOT NULL,
+  end_date TIMESTAMP,
+  location VARCHAR(255),
+  capacity INTEGER,
+  price NUMERIC(10,2) DEFAULT 0,
+  is_free BOOLEAN DEFAULT false,
+  is_recurring BOOLEAN DEFAULT false,
+  recurring_pattern VARCHAR(50) CHECK (recurring_pattern IN ('daily', 'weekly', 'biweekly', 'monthly')),
+  recurring_end_date DATE,
+  host_id UUID REFERENCES customers(id) ON DELETE SET NULL,
+  performer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
+  status VARCHAR(50) DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'cancelled', 'completed')),
+  reserved_spots_sold INTEGER DEFAULT 0,
+  door_registrations INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE event_registrations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  event_id UUID REFERENCES events(id) ON DELETE CASCADE,
+  customer_id UUID REFERENCES customers(id) ON DELETE CASCADE,
+  registration_type VARCHAR(50) NOT NULL CHECK (registration_type IN ('reserved', 'door')),
+  checked_in BOOLEAN DEFAULT false,
+  checked_in_at TIMESTAMP,
+  payment_status VARCHAR(50) CHECK (payment_status IN ('paid', 'unpaid', 'free')),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE event_tickets (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  event_id UUID REFERENCES events(id) ON DELETE CASCADE,
+  customer_id UUID REFERENCES customers(id) ON DELETE CASCADE,
+  registration_id UUID REFERENCES event_registrations(id) ON DELETE CASCADE,
+  ticket_code VARCHAR(100) UNIQUE NOT NULL,
+  ticket_type VARCHAR(50) DEFAULT 'general',
+  price NUMERIC(10,2),
+  used BOOLEAN DEFAULT false,
+  used_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE event_revenue_splits (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  event_id UUID REFERENCES events(id) ON DELETE CASCADE,
+  recipient_id UUID REFERENCES customers(id) ON DELETE CASCADE,
+  recipient_name VARCHAR(255) NOT NULL,
+  split_percentage NUMERIC(5,2) NOT NULL,
+  split_type VARCHAR(50) CHECK (split_type IN ('flat_percentage', 'per_ticket', 'fixed_amount')),
+  amount NUMERIC(10,2),
+  paid BOOLEAN DEFAULT false,
+  paid_at TIMESTAMP,
+  paid_method VARCHAR(50) CHECK (paid_method IN ('cash', 'store_credit')),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE event_sales (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  event_id UUID REFERENCES events(id) ON DELETE CASCADE,
+  sale_id UUID REFERENCES sales(id) ON DELETE CASCADE,
+  sale_total NUMERIC(10,2),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE recurring_event_instances (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  parent_event_id UUID REFERENCES events(id) ON DELETE CASCADE,
+  instance_start TIMESTAMP NOT NULL,
+  instance_end TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Indexes for events
+CREATE INDEX idx_events_type ON events(event_type);
+CREATE INDEX idx_events_status ON events(status);
+CREATE INDEX idx_events_start_date ON events(start_date);
+CREATE INDEX idx_events_host ON events(host_id);
+CREATE INDEX idx_events_performer ON events(performer_id);
+CREATE INDEX idx_event_registrations_event ON event_registrations(event_id);
+CREATE INDEX idx_event_registrations_customer ON event_registrations(customer_id);
+CREATE INDEX idx_event_tickets_event ON event_tickets(event_id);
+CREATE INDEX idx_event_tickets_code ON event_tickets(ticket_code);
+CREATE INDEX idx_event_revenue_splits_event ON event_revenue_splits(event_id);
+CREATE INDEX idx_event_sales_event ON event_sales(event_id);
