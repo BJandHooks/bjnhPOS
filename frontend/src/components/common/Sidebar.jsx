@@ -12,15 +12,15 @@ const NAV = [
   { section: 'Services' },
   { label: 'Work Orders', path: '/work-orders', icon: '⚙', roles: ['owner','manager','cashier'] },
   { label: 'Trading',    path: '/trades',       icon: '↔', roles: ['owner','manager','cashier'] },
-  { section: 'Staff' },
+  { section: 'Admin' },
+  { label: 'Import Data', path: '/imports',    icon: '↓', roles: ['owner'] },
+  { label: 'Staff',     path: '/staff',      icon: '◑', roles: ['owner'] },
   { label: 'Tasks',     path: '/tasks',      icon: '▷', roles: ['owner','manager','cashier'] },
   { label: 'Schedule',  path: '/schedule',   icon: '▤', roles: ['owner','manager','cashier'] },
   { label: 'Time Clock',path: '/timeclock',  icon: '◉', roles: ['owner','manager','cashier'] },
   { section: 'Reports' },
   { label: 'Reports',   path: '/reports',    icon: '◫', roles: ['owner','manager'] },
   { label: 'Activity',  path: '/activity',   icon: '▸', roles: ['owner','manager'] },
-  { section: 'Admin' },
-  { label: 'Staff',     path: '/staff',      icon: '◑', roles: ['owner'] },
 ];
 
 export default function Sidebar() {

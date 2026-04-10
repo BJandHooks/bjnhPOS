@@ -398,3 +398,32 @@ CREATE INDEX idx_trade_history_customer ON trade_history(customer_id);
 CREATE INDEX idx_banned_customers_customer ON banned_customers(customer_id);
 CREATE INDEX idx_trade_fraud_flags_trade ON trade_fraud_flags(trade_id);
 CREATE INDEX idx_popular_trade_items_title ON popular_trade_items(title);
+
+-- ========================
+-- DATA IMPORT TOOLS (Phase 4)
+-- ========================
+CREATE TABLE import_jobs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  import_type VARCHAR(50) NOT NULL CHECK (import_type IN ('consignors', 'inventory', 'customers', 'sales')),
+  status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'complete', 'failed')),
+  total_records INTEGER NOT NULL,
+  successful_records INTEGER DEFAULT 0,
+  failed_records INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT NOW(),
+  completed_at TIMESTAMP
+);
+
+CREATE TABLE import_errors (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  import_job_id UUID REFERENCES import_jobs(id) ON DELETE CASCADE,
+  row_number INTEGER NOT NULL,
+  field_name VARCHAR(100),
+  error_message TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_import_jobs_user ON import_jobs(user_id);
+CREATE INDEX idx_import_jobs_type ON import_jobs(import_type);
+CREATE INDEX idx_import_jobs_created ON import_jobs(created_at);
+CREATE INDEX idx_import_errors_job ON import_errors(import_job_id);
