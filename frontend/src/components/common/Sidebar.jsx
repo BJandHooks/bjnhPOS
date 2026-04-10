@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 const NAV = [
   { section: 'Register' },
@@ -9,6 +9,8 @@ const NAV = [
   { section: 'Inventory' },
   { label: 'Inventory', path: '/inventory',  icon: '▦', roles: ['owner','manager','cashier'] },
   { label: 'Consignors', path: '/consignors',icon: '◇', roles: ['owner','manager'] },
+  { section: 'Services' },
+  { label: 'Work Orders', path: '/work-orders', icon: '⚙', roles: ['owner','manager','cashier'] },
   { section: 'Staff' },
   { label: 'Tasks',     path: '/tasks',      icon: '▷', roles: ['owner','manager','cashier'] },
   { label: 'Schedule',  path: '/schedule',   icon: '▤', roles: ['owner','manager','cashier'] },
@@ -36,7 +38,7 @@ export default function Sidebar() {
           if (item.section) {
             return <div key={i} className="sidebar-section">{item.section}</div>;
           }
-          if (!can(item.roles)) return null;
+          if (\!can(item.roles)) return null;
           const active = location.pathname === item.path;
           return (
             <button key={item.path} className={`nav-item ${active ? 'active' : ''}`}

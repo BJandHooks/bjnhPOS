@@ -252,3 +252,56 @@ CREATE INDEX idx_payments_sale ON payments(sale_id);
 CREATE INDEX idx_activity_log_user ON activity_log(user_id);
 CREATE INDEX idx_activity_log_created ON activity_log(created_at);
 CREATE INDEX idx_time_clock_user ON time_clock(user_id);
+
+-- ========================
+-- WORK ORDERS (Phase 2)
+-- ========================
+CREATE TABLE work_orders (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
+  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  job_type VARCHAR(50) NOT NULL CHECK (job_type IN ('repair', 'custom_work')),
+  description TEXT NOT NULL,
+  status VARCHAR(50) DEFAULT 'received' CHECK (status IN ('received', 'in_progress', 'ready', 'picked_up')),
+  deposit_collected NUMERIC(10,2) DEFAULT 0,
+  deposit_method VARCHAR(50) CHECK (deposit_method IN ('cash', 'card', 'store_credit')),
+  estimated_completion_date DATE,
+  completed_date DATE,
+  notes TEXT,
+  assigned_to_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE work_order_items (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  work_order_id UUID REFERENCES work_orders(id) ON DELETE CASCADE,
+  description TEXT NOT NULL,
+  quantity INTEGER DEFAULT 1,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE work_order_timeline (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  work_order_id UUID REFERENCES work_orders(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  status_change VARCHAR(50) NOT NULL,
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE work_order_notifications (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  work_order_id UUID REFERENCES work_orders(id) ON DELETE CASCADE,
+  customer_id UUID REFERENCES customers(id) ON DELETE CASCADE,
+  notification_type VARCHAR(50) NOT NULL CHECK (notification_type IN ('ready', 'update')),
+  method VARCHAR(50) NOT NULL CHECK (method IN ('sms', 'email')),
+  sent_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Indexes for work orders
+CREATE INDEX idx_work_orders_customer ON work_orders(customer_id);
+CREATE INDEX idx_work_orders_status ON work_orders(status);
+CREATE INDEX idx_work_orders_assigned_to ON work_orders(assigned_to_user_id);
+CREATE INDEX idx_work_orders_created ON work_orders(created_at);
+CREATE INDEX idx_work_order_items_work_order ON work_order_items(work_order_id);

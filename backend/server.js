@@ -20,6 +20,7 @@ app.use('/api/timeclock', require('./routes/timeclock'));
 app.use('/api/tasks', require('./routes/tasks'));
 app.use('/api/schedules', require('./routes/schedules'));
 app.use('/api/activity', require('./routes/activity'));
+app.use('/api/work-orders', require('./routes/workOrders'));
 app.use('/api/reports', require('./routes/reports'));
 
 const PORT = process.env.PORT || 5000;

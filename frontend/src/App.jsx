@@ -7,12 +7,13 @@ import Register from './pages/Register';
 import Inventory from './pages/Inventory';
 import Customers from './pages/Customers';
 import Consignors from './pages/Consignors';
+import WorkOrders from './pages/WorkOrders';
 import { Staff, Tasks, Schedule, TimeClock, Reports, Activity } from './pages/StaffPages';
 import './index.css';
 
 function ProtectedLayout() {
   const { user } = useAuth();
-  if (!user) return <Navigate to="/login" />;
+  if (\!user) return <Navigate to="/login" />;
   return (
     <div className="app-layout">
       <Sidebar />
@@ -22,6 +23,7 @@ function ProtectedLayout() {
           <Route path="/inventory"  element={<Inventory />} />
           <Route path="/customers"  element={<Customers />} />
           <Route path="/consignors" element={<Consignors />} />
+          <Route path="/work-orders" element={<WorkOrders />} />
           <Route path="/staff"      element={<Staff />} />
           <Route path="/tasks"      element={<Tasks />} />
           <Route path="/schedule"   element={<Schedule />} />
