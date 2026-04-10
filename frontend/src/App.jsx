@@ -14,6 +14,7 @@ import Events from './pages/Events';
 import Media from './pages/Media';
 import OnlineStore from './pages/OnlineStore';
 import Analytics from './pages/Analytics';
+import ConsignorPortal from './pages/ConsignorPortal';
 import { Staff, Tasks, Schedule, TimeClock, Reports, Activity } from './pages/StaffPages';
 import './index.css';
 
@@ -55,6 +56,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/portal/*" element={<ConsignorPortal />} />
           <Route path="/*"     element={<ProtectedLayout />} />
         </Routes>
       </BrowserRouter>

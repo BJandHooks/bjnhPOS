@@ -709,3 +709,11 @@ CREATE TABLE IF NOT EXISTS shrinkage_log (
 
 CREATE INDEX IF NOT EXISTS idx_shrinkage_log_recorded_at ON shrinkage_log(recorded_at);
 CREATE INDEX IF NOT EXISTS idx_shrinkage_log_inventory ON shrinkage_log(inventory_id);
+
+-- Phase 10: Consignor Portal additions
+ALTER TABLE consignors ADD COLUMN IF NOT EXISTS portal_pin_hash VARCHAR(255);
+
+CREATE INDEX IF NOT EXISTS idx_consignors_email ON consignors(email);
+
+-- Phase 10: index for portal login
+CREATE INDEX IF NOT EXISTS idx_consignors_portal ON consignors(email) WHERE portal_pin_hash IS NOT NULL;
