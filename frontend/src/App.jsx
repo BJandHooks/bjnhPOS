@@ -13,6 +13,7 @@ import Imports from './pages/Imports';
 import Events from './pages/Events';
 import Media from './pages/Media';
 import OnlineStore from './pages/OnlineStore';
+import Analytics from './pages/Analytics';
 import { Staff, Tasks, Schedule, TimeClock, Reports, Activity } from './pages/StaffPages';
 import './index.css';
 
@@ -40,6 +41,7 @@ function ProtectedLayout() {
           <Route path="/timeclock"  element={<TimeClock />} />
           <Route path="/reports"    element={<Reports />} />
           <Route path="/activity"   element={<Activity />} />
+          <Route path="/analytics"  element={<Analytics />} />
           <Route path="*"           element={<Navigate to="/" />} />
         </Routes>
       </div>

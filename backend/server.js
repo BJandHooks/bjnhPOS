@@ -27,6 +27,7 @@ app.use('/api/events', require('./routes/events'));
 app.use('/api/media', require('./routes/media'));
 app.use('/api/online-store', require('./routes/onlineStore'));
 app.use('/api/reports', require('./routes/reports'));
+app.use('/api/analytics', require('./routes/analytics'));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`bjnhPOS running on port ${PORT}`));

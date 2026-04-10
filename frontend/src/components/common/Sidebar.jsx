@@ -24,6 +24,7 @@ const NAV = [
   { label: 'Time Clock',path: '/timeclock',  icon: '◉', roles: ['owner','manager','cashier'] },
   { section: 'Reports' },
   { label: 'Reports',   path: '/reports',    icon: '◫', roles: ['owner','manager'] },
+  { label: 'Analytics', path: '/analytics',  icon: '◈', roles: ['owner','manager'] },
   { label: 'Activity',  path: '/activity',   icon: '▸', roles: ['owner','manager'] },
 ];
 

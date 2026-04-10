@@ -695,3 +695,17 @@ CREATE INDEX idx_inventory_sync_log_inventory ON inventory_sync_log(inventory_id
 CREATE INDEX idx_google_shopping_feed_inventory ON google_shopping_feed(inventory_id);
 CREATE INDEX idx_website_monitoring_type ON website_monitoring(check_type);
 CREATE INDEX idx_backups_date ON backups(backup_date);
+
+-- Phase 8: Analytics & BI additions
+CREATE TABLE IF NOT EXISTS shrinkage_log (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  inventory_id UUID REFERENCES inventory(id) ON DELETE SET NULL,
+  reason VARCHAR(50) NOT NULL CHECK (reason IN ('theft', 'damage', 'loss', 'admin_error', 'other')),
+  cost_basis NUMERIC(10,2) DEFAULT 0,
+  notes TEXT,
+  recorded_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  recorded_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_shrinkage_log_recorded_at ON shrinkage_log(recorded_at);
+CREATE INDEX IF NOT EXISTS idx_shrinkage_log_inventory ON shrinkage_log(inventory_id);
