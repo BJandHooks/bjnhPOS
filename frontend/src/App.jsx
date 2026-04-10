@@ -14,6 +14,7 @@ import Events from './pages/Events';
 import Media from './pages/Media';
 import OnlineStore from './pages/OnlineStore';
 import Analytics from './pages/Analytics';
+import Marketing from './pages/Marketing';
 import ConsignorPortal from './pages/ConsignorPortal';
 import { Staff, Tasks, Schedule, TimeClock, Reports, Activity } from './pages/StaffPages';
 import './index.css';
@@ -35,6 +36,7 @@ function ProtectedLayout() {
           <Route path="/imports"    element={<Imports />} />
           <Route path="/events"     element={<Events />} />
           <Route path="/media"      element={<Media />} />
+          <Route path="/marketing"  element={<Marketing />} />
           <Route path="/online-store" element={<OnlineStore />} />
           <Route path="/staff"      element={<Staff />} />
           <Route path="/tasks"      element={<Tasks />} />

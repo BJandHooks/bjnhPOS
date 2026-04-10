@@ -717,3 +717,94 @@ CREATE INDEX IF NOT EXISTS idx_consignors_email ON consignors(email);
 
 -- Phase 10: index for portal login
 CREATE INDEX IF NOT EXISTS idx_consignors_portal ON consignors(email) WHERE portal_pin_hash IS NOT NULL;
+
+-- Phase 9: Marketing — social posting & local event listings
+
+-- OAuth tokens per platform per store
+CREATE TABLE IF NOT EXISTS platform_connections (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  platform VARCHAR(50) NOT NULL CHECK (platform IN ('facebook','instagram','tiktok','google_business')),
+  access_token TEXT,
+  refresh_token TEXT,
+  token_expires_at TIMESTAMP,
+  page_id VARCHAR(255),        -- FB page id / GMB location id / TT account id
+  page_name VARCHAR(255),
+  instagram_account_id VARCHAR(255), -- linked IG account from FB
+  is_connected BOOLEAN DEFAULT false,
+  connected_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(platform)
+);
+
+-- Post queue (drafts, scheduled, sent)
+CREATE TABLE IF NOT EXISTS marketing_posts (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  title VARCHAR(255),
+  caption TEXT NOT NULL,
+  media_url TEXT,              -- photo or video URL
+  media_type VARCHAR(20) DEFAULT 'image' CHECK (media_type IN ('image','video','reel')),
+  platforms TEXT[] NOT NULL,   -- ['facebook','instagram','tiktok','google_business']
+  status VARCHAR(30) DEFAULT 'draft' CHECK (status IN ('draft','scheduled','publishing','published','failed')),
+  scheduled_at TIMESTAMP,
+  published_at TIMESTAMP,
+  track VARCHAR(20) DEFAULT 'prime' CHECK (track IN ('autopilot','prime')),
+  inventory_id UUID REFERENCES inventory(id) ON DELETE SET NULL,
+  event_id UUID,               -- optional link to an event
+  post_results JSONB,          -- { facebook: {post_id, url}, instagram: {media_id}, ... }
+  error_details JSONB,
+  created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Per-platform post IDs for tracking published posts
+CREATE TABLE IF NOT EXISTS marketing_post_results (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  post_id UUID REFERENCES marketing_posts(id) ON DELETE CASCADE,
+  platform VARCHAR(50) NOT NULL,
+  external_post_id VARCHAR(255),
+  external_url TEXT,
+  status VARCHAR(30) DEFAULT 'published',
+  error_message TEXT,
+  published_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Local event listings on external platforms
+CREATE TABLE IF NOT EXISTS local_event_listings (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  event_id UUID,               -- references internal events table
+  platform VARCHAR(50) NOT NULL CHECK (platform IN ('facebook','google_business','eventbrite')),
+  external_event_id VARCHAR(255),
+  external_url TEXT,
+  title VARCHAR(500),
+  description TEXT,
+  start_time TIMESTAMP,
+  end_time TIMESTAMP,
+  location TEXT,
+  cover_image_url TEXT,
+  ticket_url TEXT,
+  status VARCHAR(30) DEFAULT 'draft' CHECK (status IN ('draft','published','cancelled','ended')),
+  sync_enabled BOOLEAN DEFAULT true,
+  last_synced_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Caption pool for autopilot posts
+CREATE TABLE IF NOT EXISTS caption_pool (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  caption TEXT NOT NULL,
+  tags TEXT[],
+  approved BOOLEAN DEFAULT false,
+  used_count INTEGER DEFAULT 0,
+  last_used_at TIMESTAMP,
+  created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_marketing_posts_status ON marketing_posts(status);
+CREATE INDEX IF NOT EXISTS idx_marketing_posts_scheduled ON marketing_posts(scheduled_at);
+CREATE INDEX IF NOT EXISTS idx_marketing_posts_track ON marketing_posts(track);
+CREATE INDEX IF NOT EXISTS idx_local_event_listings_event ON local_event_listings(event_id);
+CREATE INDEX IF NOT EXISTS idx_platform_connections_platform ON platform_connections(platform);
