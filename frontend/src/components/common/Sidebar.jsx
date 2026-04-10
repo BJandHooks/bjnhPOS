@@ -13,6 +13,8 @@ const NAV = [
   { label: 'Work Orders', path: '/work-orders', icon: '⚙', roles: ['owner','manager','cashier'] },
   { label: 'Trading',    path: '/trades',       icon: '↔', roles: ['owner','manager','cashier'] },
   { label: 'Events',     path: '/events',       icon: '◎', roles: ['owner','manager'] },
+  { section: 'Marketing' },
+  { label: 'Media Hub',  path: '/media',        icon: '📷', roles: ['owner','manager'] },
   { section: 'Admin' },
   { label: 'Import Data', path: '/imports',    icon: '↓', roles: ['owner'] },
   { label: 'Staff',     path: '/staff',      icon: '◑', roles: ['owner'] },

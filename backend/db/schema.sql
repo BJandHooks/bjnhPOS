@@ -520,3 +520,80 @@ CREATE INDEX idx_event_tickets_event ON event_tickets(event_id);
 CREATE INDEX idx_event_tickets_code ON event_tickets(ticket_code);
 CREATE INDEX idx_event_revenue_splits_event ON event_revenue_splits(event_id);
 CREATE INDEX idx_event_sales_event ON event_sales(event_id);
+
+-- ========================
+-- MEDIA HUB (Phase 6)
+-- ========================
+CREATE TABLE media_files (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  inventory_id UUID REFERENCES inventory(id) ON DELETE CASCADE,
+  file_path VARCHAR(500) NOT NULL,
+  file_type VARCHAR(50) NOT NULL CHECK (file_type IN ('image', 'video')),
+  file_size INTEGER,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE social_content_queue (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  media_file_id UUID REFERENCES media_files(id) ON DELETE CASCADE,
+  title VARCHAR(255),
+  caption TEXT,
+  approved BOOLEAN DEFAULT false,
+  approved_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  approved_at TIMESTAMP,
+  in_queue BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE social_posts (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  platform VARCHAR(50) NOT NULL CHECK (platform IN ('facebook', 'instagram', 'tiktok')),
+  track VARCHAR(50) NOT NULL CHECK (track IN ('autopilot', 'prime_time')),
+  content_id UUID REFERENCES social_content_queue(id) ON DELETE SET NULL,
+  scheduled_at TIMESTAMP,
+  posted_at TIMESTAMP,
+  post_url VARCHAR(500),
+  caption TEXT,
+  views INTEGER DEFAULT 0,
+  likes INTEGER DEFAULT 0,
+  status VARCHAR(50) DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'posted', 'failed', 'cancelled')),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE social_autopilot_schedules (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  platform VARCHAR(50) NOT NULL CHECK (platform IN ('facebook', 'instagram', 'tiktok')),
+  post_time TIME NOT NULL,
+  randomize_caption BOOLEAN DEFAULT true,
+  enabled BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE social_captions_pool (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  caption TEXT NOT NULL,
+  platform VARCHAR(50) CHECK (platform IN ('facebook', 'instagram', 'tiktok')),
+  approved BOOLEAN DEFAULT false,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE platform_connections (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  platform VARCHAR(50) NOT NULL UNIQUE CHECK (platform IN ('facebook', 'instagram', 'tiktok', 'google_my_business')),
+  access_token VARCHAR(1000),
+  access_token_expires_at TIMESTAMP,
+  business_account_id VARCHAR(255),
+  page_id VARCHAR(255),
+  connected BOOLEAN DEFAULT false,
+  connected_at TIMESTAMP,
+  connected_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Indexes for media hub
+CREATE INDEX idx_media_files_inventory ON media_files(inventory_id);
+CREATE INDEX idx_social_content_queue_approved ON social_content_queue(approved);
+CREATE INDEX idx_social_posts_platform ON social_posts(platform);
+CREATE INDEX idx_social_posts_status ON social_posts(status);
+CREATE INDEX idx_social_posts_scheduled ON social_posts(scheduled_at);
+CREATE INDEX idx_social_captions_approved ON social_captions_pool(approved);
