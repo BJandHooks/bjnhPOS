@@ -77,13 +77,13 @@ export default function Marketing() {
   const publishPost = async id => {
     try {
       const r = await api.post(`/api/marketing/posts/${id}/publish`);
-      flash('Published! ' + Object.keys(r.data.results).join(', '));
+      flash('Published\! ' + Object.keys(r.data.results).join(', '));
       loadAll();
     } catch (e) { flash(e.response?.data?.error || 'Publish failed'); }
   };
 
   const deletePost = async id => {
-    if (!window.confirm('Delete this post?')) return;
+    if (\!window.confirm('Delete this post?')) return;
     await api.delete(`/api/marketing/posts/${id}`);
     loadAll();
   };
@@ -91,7 +91,7 @@ export default function Marketing() {
   const publishEvent = async id => {
     try {
       const r = await api.post(`/api/marketing/event-listings/${id}/publish`);
-      flash('Event published! ID: ' + r.data.id);
+      flash('Event published\! ID: ' + r.data.id);
       loadAll();
     } catch (e) { flash(e.response?.data?.error || 'Event publish failed'); }
   };
@@ -178,7 +178,7 @@ function PostQueue({ posts, onPublish, onDelete, onRefresh, flash }) {
 
   const submit = async e => {
     e.preventDefault();
-    if (!form.platforms.length) return flash('Select at least one platform');
+    if (\!form.platforms.length) return flash('Select at least one platform');
     try {
       await api.post('/api/marketing/posts', { ...form, scheduled_at: form.scheduled_at || undefined });
       setForm({ title:'', caption:'', media_url:'', media_type:'image', platforms:[], scheduled_at:'', track:'prime' });
@@ -188,7 +188,7 @@ function PostQueue({ posts, onPublish, onDelete, onRefresh, flash }) {
     } catch (e) { flash(e.response?.data?.error || 'Error'); }
   };
 
-  const togglePlatform = p => setForm(f => ({ ...f, platforms: f.platforms.includes(p) ? f.platforms.filter(x=>x!==p) : [...f.platforms, p] }));
+  const togglePlatform = p => setForm(f => ({ ...f, platforms: f.platforms.includes(p) ? f.platforms.filter(x=>x\!==p) : [...f.platforms, p] }));
 
   return (
     <div>
@@ -198,7 +198,7 @@ function PostQueue({ posts, onPublish, onDelete, onRefresh, flash }) {
             <button key={s} onClick={()=>setFilter(s)} style={{ padding:'5px 12px', borderRadius:14, border:'none', background:filter===s?'#4f46e5':'#f3f4f6', color:filter===s?'#fff':'#374151', fontSize:13, fontWeight:600, cursor:'pointer' }}>{s}</button>
           ))}
         </div>
-        <button onClick={()=>setShowForm(v=>!v)} style={{ padding:'8px 16px', background:'#4f46e5', color:'#fff', border:'none', borderRadius:7, fontWeight:600, fontSize:14, cursor:'pointer' }}>+ New Post</button>
+        <button onClick={()=>setShowForm(v=>\!v)} style={{ padding:'8px 16px', background:'#4f46e5', color:'#fff', border:'none', borderRadius:7, fontWeight:600, fontSize:14, cursor:'pointer' }}>+ New Post</button>
       </div>
 
       {showForm && (
@@ -263,7 +263,7 @@ function PostQueue({ posts, onPublish, onDelete, onRefresh, flash }) {
                 {['draft','scheduled','failed'].includes(post.status) && (
                   <button onClick={()=>onPublish(post.id)} style={{ padding:'6px 14px', background:'#16a34a', color:'#fff', border:'none', borderRadius:6, fontWeight:600, fontSize:13, cursor:'pointer' }}>Publish Now</button>
                 )}
-                {post.status !== 'published' && (
+                {post.status \!== 'published' && (
                   <button onClick={()=>onDelete(post.id)} style={{ padding:'6px 12px', background:'#fee2e2', color:'#dc2626', border:'none', borderRadius:6, fontSize:13, cursor:'pointer' }}>Delete</button>
                 )}
               </div>
@@ -283,7 +283,7 @@ function CaptionPool({ captions, onRefresh, flash }) {
 
   const addOne = async e => {
     e.preventDefault();
-    if (!text.trim()) return;
+    if (\!text.trim()) return;
     try {
       await api.post('/api/marketing/captions', { captions: [text] });
       setText(''); onRefresh(); flash('Caption added');
@@ -292,7 +292,7 @@ function CaptionPool({ captions, onRefresh, flash }) {
 
   const addBulk = async () => {
     const lines = bulk.split('\n').map(l=>l.trim()).filter(Boolean);
-    if (!lines.length) return;
+    if (\!lines.length) return;
     try {
       await api.post('/api/marketing/captions', { captions: lines });
       setBulk(''); setShowBulk(false); onRefresh(); flash(`${lines.length} captions added`);
@@ -300,7 +300,7 @@ function CaptionPool({ captions, onRefresh, flash }) {
   };
 
   const toggleApprove = async (id, current) => {
-    await api.patch(`/api/marketing/captions/${id}/approve`, { approved: !current });
+    await api.patch(`/api/marketing/captions/${id}/approve`, { approved: \!current });
     onRefresh();
   };
 
@@ -316,7 +316,7 @@ function CaptionPool({ captions, onRefresh, flash }) {
         <form onSubmit={addOne} style={{ display:'flex', gap:8 }}>
           <input value={text} onChange={e=>setText(e.target.value)} placeholder="Write a caption…" style={{ flex:1, padding:'8px 12px', border:'1px solid #ddd', borderRadius:6, fontSize:14 }} />
           <button type="submit" style={{ padding:'8px 16px', background:'#4f46e5', color:'#fff', border:'none', borderRadius:6, fontWeight:600, fontSize:14, cursor:'pointer' }}>Add</button>
-          <button type="button" onClick={()=>setShowBulk(v=>!v)} style={{ padding:'8px 14px', background:'#f3f4f6', color:'#374151', border:'none', borderRadius:6, fontSize:14, cursor:'pointer' }}>Bulk Paste</button>
+          <button type="button" onClick={()=>setShowBulk(v=>\!v)} style={{ padding:'8px 14px', background:'#f3f4f6', color:'#374151', border:'none', borderRadius:6, fontSize:14, cursor:'pointer' }}>Bulk Paste</button>
         </form>
         {showBulk && (
           <div style={{ marginTop:12 }}>
@@ -367,7 +367,7 @@ function EventListings({ listings, onPublish, onRefresh, flash }) {
   return (
     <div>
       <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:16 }}>
-        <button onClick={()=>setShowForm(v=>!v)} style={{ padding:'8px 16px', background:'#4f46e5', color:'#fff', border:'none', borderRadius:7, fontWeight:600, fontSize:14, cursor:'pointer' }}>+ New Event Listing</button>
+        <button onClick={()=>setShowForm(v=>\!v)} style={{ padding:'8px 16px', background:'#4f46e5', color:'#fff', border:'none', borderRadius:7, fontWeight:600, fontSize:14, cursor:'pointer' }}>+ New Event Listing</button>
       </div>
 
       {showForm && (

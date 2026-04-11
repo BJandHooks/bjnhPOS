@@ -6,7 +6,7 @@ const { log } = require('../middleware/logger');
 // POST /api/returns — process a return or exchange
 router.post('/', auth, requireRole('owner', 'manager'), async (req, res) => {
   const { original_sale_id, customer_id, items, refund_method, refund_amount, reason } = req.body;
-  const client = await db.connect();
+  const client = await db.getClient();
   try {
     await client.query('BEGIN');
 

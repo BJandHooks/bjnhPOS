@@ -1,19 +1,12 @@
-// Prevent Node 18 built-in fetch (undici) from loading its WASM on constrained hosting
-delete globalThis.fetch;
-
 require('dotenv').config();
 const express = require('express');
-const path = require('path');
 const cors = require('cors');
 const app = express();
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
-// Serve built React frontend from backend/public/
-app.use(express.static(path.join(__dirname, 'public')));
-
-// ── API Routes ────────────────────────────────────────────────────────────────
+// Routes
 app.use('/api/auth',         require('./routes/auth'));
 app.use('/api/users',        require('./routes/users'));
 app.use('/api/customers',    require('./routes/customers'));
@@ -32,18 +25,19 @@ app.use('/api/trades',       require('./routes/trades'));
 app.use('/api/imports',      require('./routes/imports'));
 app.use('/api/events',       require('./routes/events'));
 app.use('/api/media',        require('./routes/media'));
+app.use('/api/marketing',    require('./routes/marketing'));
 app.use('/api/online-store', require('./routes/onlineStore'));
 app.use('/api/portal',       require('./routes/consignorPortal'));
 app.use('/api/reports',      require('./routes/reports'));
+app.use('/api/analytics',    require('./routes/analytics'));
+app.use('/api/dashboard',    require('./routes/dashboard'));
 
-// Lazy-load heavy routes (avoids startup memory spike on cPanel shared hosting)
-app.use('/api/marketing', (req, res, next) => require('./routes/marketing')(req, res, next));
-app.use('/api/analytics',  (req, res, next) => require('./routes/analytics')(req, res, next));
+// Health check
+app.get('/api/health', (req, res) => res.json({ status: 'ok', ts: new Date() }));
 
-// React Router fallback — serve index.html for all non-API paths
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`bjnhPOS API running on port ${PORT} [${process.env.NODE_ENV || 'development'}]`);
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`bjnhPOS running on port ${PORT}`));
+module.exports = app;

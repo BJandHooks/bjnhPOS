@@ -82,7 +82,7 @@ router.patch('/:id', auth, requireRole('owner', 'manager'), async (req, res) => 
 // POST /api/consignors/bulk-import
 router.post('/bulk-import', auth, requireRole('owner'), async (req, res) => {
   const { consignors } = req.body;
-  const client = await db.connect();
+  const client = await db.getClient();
   try {
     await client.query('BEGIN');
     const imported = [];
@@ -108,7 +108,7 @@ router.post('/bulk-import', auth, requireRole('owner'), async (req, res) => {
 // POST /api/consignors/:id/payout — process a payout
 router.post('/:id/payout', auth, requireRole('owner', 'manager'), async (req, res) => {
   const { method, triggered_by } = req.body;
-  const client = await db.connect();
+  const client = await db.getClient();
   try {
     await client.query('BEGIN');
     const consignor = await client.query('SELECT * FROM consignors WHERE id = $1', [req.params.id]);

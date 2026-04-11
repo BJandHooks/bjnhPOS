@@ -21,7 +21,7 @@ function StatCard({ label, value, sub }) {
 }
 
 function Table({ columns, rows }) {
-  if (!rows || rows.length === 0) return <div style={{ color:'#aaa', padding:'20px 0' }}>No data</div>;
+  if (\!rows || rows.length === 0) return <div style={{ color:'#aaa', padding:'20px 0' }}>No data</div>;
   return (
     <div style={{ overflowX:'auto' }}>
       <table style={{ width:'100%', borderCollapse:'collapse', fontSize:14 }}>
@@ -60,8 +60,8 @@ export default function Analytics() {
   const [range, setRange] = useState({ start: jan1, end: today });
   const [data, setData] = useState({});
   const [loading, setLoading] = useState(false);
-  const fmt$ = v => v != null ? `$${Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}` : '—';
-  const fmtN = v => v != null ? Number(v).toLocaleString() : '—';
+  const fmt$ = v => v \!= null ? `$${Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}` : '—';
+  const fmtN = v => v \!= null ? Number(v).toLocaleString() : '—';
 
   const fetchTab = useCallback(async () => {
     setLoading(true);
@@ -101,7 +101,7 @@ export default function Analytics() {
           <div style={{ display:'flex', gap:16, flexWrap:'wrap', marginBottom:32 }}>
             <StatCard label="Avg Transaction" value={fmt$(data.avg_transaction?.avg_transaction_value)} sub={`Median ${fmt$(data.avg_transaction?.median_transaction)}`} />
             <StatCard label="Total Revenue" value={fmt$(data.avg_transaction?.total_revenue)} sub={`${fmtN(data.avg_transaction?.total_transactions)} transactions`} />
-            <StatCard label="Conversion Rate" value={data.conversion?.conversion_rate_pct!=null?`${data.conversion.conversion_rate_pct}%`:'—'} sub={`${fmtN(data.conversion?.total_purchasers)} of ${fmtN(data.conversion?.total_interactions)}`} />
+            <StatCard label="Conversion Rate" value={data.conversion?.conversion_rate_pct\!=null?`${data.conversion.conversion_rate_pct}%`:'—'} sub={`${fmtN(data.conversion?.total_purchasers)} of ${fmtN(data.conversion?.total_interactions)}`} />
             <StatCard label="Shrinkage Value" value={fmt$(data.shrinkage?.totals?.total_value)} sub={`${fmtN(data.shrinkage?.totals?.total_items)} items`} />
           </div>
           <h3 style={{ margin:'0 0 12px' }}>Inventory Turnover by Category</h3>
@@ -143,7 +143,7 @@ export default function Analytics() {
       {tab==='customers' && (
         <div>
           <div style={{ display:'flex', gap:16, flexWrap:'wrap', marginBottom:24 }}>
-            <StatCard label="Repeat Purchase Rate" value={data.patterns?.repeat_rate?.repeat_rate_pct!=null?`${data.patterns.repeat_rate.repeat_rate_pct}%`:'—'} />
+            <StatCard label="Repeat Purchase Rate" value={data.patterns?.repeat_rate?.repeat_rate_pct\!=null?`${data.patterns.repeat_rate.repeat_rate_pct}%`:'—'} />
             <StatCard label="Avg Days Between Purchases" value={data.patterns?.avg_purchase_gap?.avg_days_between_purchases??'—'} />
             <StatCard label="At-Risk Customers" value={fmtN(data.patterns?.churn_risk?.at_risk_customers)} sub="Bought before, not this period" />
           </div>

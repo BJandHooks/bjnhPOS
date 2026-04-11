@@ -60,7 +60,7 @@ router.get('/:id', auth, async (req, res) => {
 // POST /api/sales — process a sale
 router.post('/', auth, async (req, res) => {
   const { customer_id, items, payments: paymentData, event_id } = req.body;
-  const client = await db.connect();
+  const client = await db.getClient();
   try {
     await client.query('BEGIN');
 
@@ -164,7 +164,7 @@ router.post('/', auth, async (req, res) => {
 // POST /api/sales/bulk-import — import historical sales
 router.post('/bulk-import', auth, requireRole('owner'), async (req, res) => {
   const { sales } = req.body;
-  const client = await db.connect();
+  const client = await db.getClient();
   try {
     await client.query('BEGIN');
     let count = 0;

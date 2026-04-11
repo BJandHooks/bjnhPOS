@@ -1,9 +1,10 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Sidebar from './components/common/Sidebar';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Dashboard from './pages/Dashboard';
 import Inventory from './pages/Inventory';
 import Customers from './pages/Customers';
 import Consignors from './pages/Consignors';
@@ -21,33 +22,13 @@ import './index.css';
 
 function ProtectedLayout() {
   const { user } = useAuth();
-  if (!user) return <Navigate to="/login" />;
+  if (\!user) return <Navigate to="/login" replace />;
   return (
     <div className="app-layout">
       <Sidebar />
-      <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        <Routes>
-          <Route path="/"           element={<Register />} />
-          <Route path="/inventory"  element={<Inventory />} />
-          <Route path="/customers"  element={<Customers />} />
-          <Route path="/consignors" element={<Consignors />} />
-          <Route path="/work-orders" element={<WorkOrders />} />
-          <Route path="/trades"     element={<Trades />} />
-          <Route path="/imports"    element={<Imports />} />
-          <Route path="/events"     element={<Events />} />
-          <Route path="/media"      element={<Media />} />
-          <Route path="/marketing"  element={<Marketing />} />
-          <Route path="/online-store" element={<OnlineStore />} />
-          <Route path="/staff"      element={<Staff />} />
-          <Route path="/tasks"      element={<Tasks />} />
-          <Route path="/schedule"   element={<Schedule />} />
-          <Route path="/timeclock"  element={<TimeClock />} />
-          <Route path="/reports"    element={<Reports />} />
-          <Route path="/activity"   element={<Activity />} />
-          <Route path="/analytics"  element={<Analytics />} />
-          <Route path="*"           element={<Navigate to="/" />} />
-        </Routes>
-      </div>
+      <main className="main-content">
+        <Outlet />
+      </main>
     </div>
   );
 }
@@ -59,7 +40,31 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/portal/*" element={<ConsignorPortal />} />
-          <Route path="/*"     element={<ProtectedLayout />} />
+
+          <Route path="/" element={<ProtectedLayout />}>
+            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route path="dashboard"    element={<Dashboard />} />
+            <Route path="register"     element={<Register />} />
+            <Route path="inventory"    element={<Inventory />} />
+            <Route path="customers"    element={<Customers />} />
+            <Route path="consignors"   element={<Consignors />} />
+            <Route path="work-orders"  element={<WorkOrders />} />
+            <Route path="trades"       element={<Trades />} />
+            <Route path="imports"      element={<Imports />} />
+            <Route path="events"       element={<Events />} />
+            <Route path="media"        element={<Media />} />
+            <Route path="marketing"    element={<Marketing />} />
+            <Route path="online-store" element={<OnlineStore />} />
+            <Route path="staff"        element={<Staff />} />
+            <Route path="tasks"        element={<Tasks />} />
+            <Route path="schedule"     element={<Schedule />} />
+            <Route path="timeclock"    element={<TimeClock />} />
+            <Route path="reports"      element={<Reports />} />
+            <Route path="analytics"    element={<Analytics />} />
+            <Route path="activity"     element={<Activity />} />
+          </Route>
+
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

@@ -1,248 +1,321 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '../utils/api';
 import { useToast } from '../hooks/useToast';
 
-const IMPORT_TYPES = [
-  { value: 'consignors', label: 'Consignors', description: 'Import consignor profiles with split percentages' },
-  { value: 'inventory', label: 'Inventory', description: 'Import product catalog items' },
-  { value: 'customers', label: 'Customers', description: 'Import customer profiles' },
-  { value: 'sales', label: 'Sales History', description: 'Import past sales records' }
+const TYPES = [
+  { value: 'inventory',   label: 'Inventory',     icon: '▦', desc: 'Products, records, and items for sale',     required: ['title','condition','price'] },
+  { value: 'customers',   label: 'Customers',      icon: '◈', desc: 'Customer profiles and contact info',        required: ['name'] },
+  { value: 'consignors',  label: 'Consignors',     icon: '◇', desc: 'Consignor profiles and split rates',       required: ['name','split_percentage'], ownerOnly: true },
+  { value: 'users',       label: 'Staff / Users',  icon: '◑', desc: 'Staff accounts — passwords set to default', required: ['name','email','role'], ownerOnly: true },
+  { value: 'work_orders', label: 'Work Orders',    icon: '⚙', desc: 'Repair and service jobs',                  required: ['job_type','description'] },
 ];
+
+const STEP = { SELECT: 'select', PASTE: 'paste', PREVIEW: 'preview', RESULT: 'result' };
 
 export default function Imports() {
   const { show, Toast } = useToast();
-  const [selectedType, setSelectedType] = useState('');
-  const [csvData, setCsvData] = useState('');
-  const [history, setHistory] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [importing, setImporting] = useState(false);
-  const [detail, setDetail] = useState(null);
-  const [errors, setErrors] = useState([]);
+  const [step, setStep]                   = useState(STEP.SELECT);
+  const [type, setType]                   = useState(null);
+  const [csv, setCsv]                     = useState('');
+  const [preview, setPreview]             = useState(null);
+  const [prevLoading, setPrevLoading]     = useState(false);
+  const [importing, setImporting]         = useState(false);
+  const [result, setResult]               = useState(null);
+  const [history, setHistory]             = useState([]);
+  const [histLoading, setHistLoading]     = useState(true);
+  const [errModal, setErrModal]           = useState(null);
+  const [errRows, setErrRows]             = useState([]);
 
-  useEffect(() => { loadHistory(); }, []);
+  const loadHistory = useCallback(async () => {
+    setHistLoading(true);
+    try { const r = await api.get('/imports/history'); setHistory(r.data); } catch {}
+    finally { setHistLoading(false); }
+  }, []);
 
-  const loadHistory = async () => {
+  useEffect(() => { loadHistory(); }, [loadHistory]);
+
+  const downloadTemplate = async (t) => {
     try {
-      const res = await api.get('/imports/history');
-      setHistory(res.data);
-    } catch {
-      show('Failed to load import history.', 'error');
-    }
-  };
-
-  const downloadTemplate = async (type) => {
-    try {
-      const response = await api.get(`/imports/templates/${type}`, { responseType: 'blob' });
-      const url = window.URL.createObjectURL(response.data);
+      const r = await api.get(`/imports/templates/${t}`, { responseType: 'blob' });
+      const url = URL.createObjectURL(r.data);
       const a = document.createElement('a');
-      a.href = url;
-      a.download = `import-${type}.csv`;
-      a.click();
+      a.href = url; a.download = `import-template-${t}.csv`;
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a); URL.revokeObjectURL(url);
       show('Template downloaded.', 'success');
-    } catch {
-      show('Failed to download template.', 'error');
-    }
+    } catch { show('Download failed.', 'error'); }
   };
 
-  const handlePaste = async (e) => {
-    const pasted = e.clipboardData?.getData('text');
-    if (pasted) {
-      setCsvData(pasted);
-      show('CSV pasted from clipboard.', 'success');
-    }
+  const handlePreview = async () => {
+    if (\!csv.trim()) { show('Paste CSV data first.', 'error'); return; }
+    setPrevLoading(true);
+    try {
+      const r = await api.post('/imports/preview', { csv_data: csv, type: type.value });
+      setPreview(r.data);
+      setStep(STEP.PREVIEW);
+    } catch (e) { show(e.response?.data?.error || 'Preview failed.', 'error'); }
+    finally { setPrevLoading(false); }
   };
 
-  const previewData = () => {
-    if (!csvData.trim()) {
-      show('Please paste CSV data first.', 'error');
-      return;
-    }
-
-    const lines = csvData.trim().split('\n');
-    const headers = lines[0].split(',').map(h => h.trim());
-    const preview = [];
-
-    for (let i = 1; i < Math.min(lines.length, 6); i++) {
-      const values = lines[i].split(',').map(v => v.trim());
-      const row = {};
-      headers.forEach((h, idx) => {
-        row[h] = values[idx] || '';
-      });
-      preview.push(row);
-    }
-
-    return { headers, preview, total: lines.length - 1 };
-  };
-
-  const submitImport = async () => {
-    if (!selectedType) {
-      show('Please select import type.', 'error');
-      return;
-    }
-    if (!csvData.trim()) {
-      show('Please paste CSV data.', 'error');
-      return;
-    }
-
+  const handleImport = async () => {
     setImporting(true);
     try {
-      const res = await api.post(`/imports/${selectedType}`, { csv_data: csvData });
-      show(`Import complete: ${res.data.successCount} succeeded, ${res.data.errorCount} failed.`, 'success');
-      setCsvData('');
-      setSelectedType('');
+      const r = await api.post(`/imports/${type.value}`, { csv_data: csv });
+      setResult(r.data);
+      setStep(STEP.RESULT);
       loadHistory();
-    } catch {
-      show('Import failed.', 'error');
-    } finally {
-      setImporting(false);
-    }
+      const { successCount: ok, errorCount: fail } = r.data;
+      if (fail > 0 && ok > 0) show(`${ok} imported, ${fail} failed.`, 'info');
+      else if (fail > 0)       show(`Import failed: ${fail} rows had errors.`, 'error');
+      else                     show(`${ok} records imported successfully.`, 'success');
+    } catch (e) { show(e.response?.data?.error || 'Import failed.', 'error'); }
+    finally { setImporting(false); }
   };
 
-  const loadDetail = async (job) => {
+  const reset = () => { setStep(STEP.SELECT); setType(null); setCsv(''); setPreview(null); setResult(null); };
+
+  const openErrors = async (job) => {
     try {
-      const errRes = await api.get(`/imports/history/${job.id}/errors`);
-      setErrors(errRes.data);
-      setDetail(job);
-    } catch {
-      show('Failed to load error details.', 'error');
-    }
+      const r = await api.get(`/imports/history/${job.id}/errors`);
+      setErrRows(r.data); setErrModal(job);
+    } catch { show('Failed to load errors.', 'error'); }
   };
 
-  const preview = selectedType && csvData ? previewData() : null;
+  const validRows  = preview ? preview.total_rows - preview.error_count : 0;
 
   return (
     <div className="main-content">
       {Toast}
       <div className="page-header">
-        <h2>Bulk Data Import</h2>
-        <span className="text-sm text-muted">Import existing data from CSV files</span>
+        <div>
+          <h2>Bulk Data Import</h2>
+          <span className="text-sm text-muted">Import records from CSV into any module</span>
+        </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 32 }}>
-        {IMPORT_TYPES.map(type => (
-          <div
-            key={type.value}
-            className="card"
-            onClick={() => setSelectedType(type.value)}
-            style={{ cursor: 'pointer', border: selectedType === type.value ? '2px solid #059669' : '', padding: 16 }}>
-            <h4 style={{ marginBottom: 8 }}>{type.label}</h4>
-            <p className="text-sm text-muted">{type.description}</p>
-            <button
-              className="btn btn-sm btn-ghost"
-              onClick={e => { e.stopPropagation(); downloadTemplate(type.value); }}
-              style={{ marginTop: 12 }}>
-              Download Template
+      {/* ── Step 1: choose module ── */}
+      {step === STEP.SELECT && (
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(230px,1fr))', gap:14, marginBottom:32 }}>
+          {TYPES.map(t => (
+            <div
+              key={t.value}
+              className="card"
+              style={{ padding:18, cursor:'pointer' }}
+              onClick={() => { setType(t); setStep(STEP.PASTE); }}
+            >
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
+                <span style={{ fontSize:14, fontWeight:600 }}>{t.icon} {t.label}</span>
+                {t.ownerOnly && (
+                  <span style={{ fontSize:10, background:'#fef3c7', color:'#92400e', padding:'2px 6px', borderRadius:10 }}>
+                    Owner only
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-muted" style={{ margin:'0 0 10px' }}>{t.desc}</p>
+              <div style={{ marginBottom:12 }}>
+                <span className="text-xs text-muted">Required: </span>
+                {t.required.map(c => (
+                  <code key={c} style={{ fontSize:11, background:'#f3f4f6', padding:'1px 5px', borderRadius:3, marginRight:3 }}>{c}</code>
+                ))}
+              </div>
+              <button
+                className="btn btn-sm btn-ghost"
+                style={{ width:'100%' }}
+                onClick={e => { e.stopPropagation(); downloadTemplate(t.value); }}
+              >
+                ↓ Download Template
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Step 2: paste CSV ── */}
+      {step === STEP.PASTE && type && (
+        <div className="card" style={{ marginBottom:24 }}>
+          <div className="card-header" style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+            <div>
+              <h3 style={{ margin:0 }}>{type.icon} {type.label} — Paste CSV</h3>
+              <span className="text-sm text-muted">
+                Required columns: {type.required.map(c => <code key={c} style={{ marginLeft:4 }}>{c}</code>)}
+              </span>
+            </div>
+            <button className="btn btn-sm btn-ghost" onClick={reset}>← Back</button>
+          </div>
+          <div style={{ padding:20 }}>
+            <button className="btn btn-sm btn-ghost" style={{ marginBottom:14 }} onClick={() => downloadTemplate(type.value)}>
+              ↓ Download Template
             </button>
-          </div>
-        ))}
-      </div>
-
-      {selectedType && (
-        <div className="card">
-          <div className="card-header">
-            <h3>{IMPORT_TYPES.find(t => t.value === selectedType)?.label} Import</h3>
-          </div>
-
-          <div className="form-grid cols-1" style={{ padding: 16 }}>
             <div className="form-group">
               <label>Paste CSV Data</label>
               <textarea
                 className="input"
-                rows={8}
-                placeholder="Paste your CSV data here (copy from Excel or Google Sheets)"
-                value={csvData}
-                onChange={e => setCsvData(e.target.value)}
-                onPaste={handlePaste}
-                style={{ fontFamily: 'monospace', fontSize: 12 }}
+                rows={10}
+                value={csv}
+                onChange={e => setCsv(e.target.value)}
+                placeholder={`First row must be headers.\n\nExample:\n${type.required.join(',')}\n...`}
+                style={{ fontFamily:'monospace', fontSize:12 }}
               />
-              <div className="text-xs text-muted" style={{ marginTop: 8 }}>
-                Include header row in first line. Paste from Excel or Google Sheets directly.
+              <div className="text-xs text-muted" style={{ marginTop:6 }}>
+                Copy directly from Excel or Google Sheets (select all → copy → paste here).
               </div>
             </div>
-
-            {preview && (
-              <div style={{ backgroundColor: '#f3f4f6', padding: 16, borderRadius: 4 }}>
-                <h4 className="text-sm" style={{ marginBottom: 12 }}>Preview ({preview.total} rows)</h4>
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ fontSize: 12 }}>
-                    <thead>
-                      <tr>
-                        {preview.headers.map(h => (
-                          <th key={h} style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid #d1d5db' }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {preview.preview.map((row, i) => (
-                        <tr key={i} style={{ backgroundColor: i % 2 === 0 ? 'white' : '#fafafa' }}>
-                          {preview.headers.map(h => (
-                            <td key={h} style={{ padding: '8px 12px', borderBottom: '1px solid #e5e7eb' }}>
-                              {row[h]}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-              <button
-                className="btn btn-primary"
-                onClick={submitImport}
-                disabled={importing || !preview}>
-                {importing ? 'Importing...' : 'Import Data'}
+            <div style={{ display:'flex', gap:10, marginTop:16 }}>
+              <button className="btn btn-primary" onClick={handlePreview} disabled={\!csv.trim() || prevLoading}>
+                {prevLoading ? 'Checking…' : 'Preview & Validate →'}
               </button>
-              <button className="btn btn-ghost" onClick={() => { setCsvData(''); setSelectedType(''); }}>
-                Clear
-              </button>
+              <button className="btn btn-ghost" onClick={reset}>Cancel</button>
             </div>
           </div>
         </div>
       )}
 
-      <div className="card" style={{ marginTop: 24 }}>
-        <div className="card-header">
-          <h3>Import History</h3>
-          <span className="text-muted text-sm">{history.length} imports</span>
-        </div>
+      {/* ── Step 3: preview + confirm ── */}
+      {step === STEP.PREVIEW && preview && type && (
+        <>
+          <div className="card" style={{ marginBottom:16, padding:18 }}>
+            <div style={{ display:'flex', gap:28, alignItems:'center', flexWrap:'wrap' }}>
+              <div>
+                <div style={{ fontSize:12, color:'#6b7280' }}>Total rows</div>
+                <div style={{ fontSize:24, fontWeight:700 }}>{preview.total_rows}</div>
+              </div>
+              <div>
+                <div style={{ fontSize:12, color:'#059669' }}>Valid</div>
+                <div style={{ fontSize:24, fontWeight:700, color:'#059669' }}>{validRows}</div>
+              </div>
+              <div>
+                <div style={{ fontSize:12, color:'#dc2626' }}>Errors</div>
+                <div style={{ fontSize:24, fontWeight:700, color: preview.error_count > 0 ? '#dc2626' : '#9ca3af' }}>
+                  {preview.error_count}
+                </div>
+              </div>
+              <div style={{ flex:1, display:'flex', gap:10, justifyContent:'flex-end' }}>
+                <button className="btn btn-ghost" onClick={() => setStep(STEP.PASTE)}>← Edit CSV</button>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleImport}
+                  disabled={importing || validRows === 0}
+                >
+                  {importing ? 'Importing…' : `Import ${validRows} valid row${validRows \!== 1 ? 's' : ''}`}
+                </button>
+              </div>
+            </div>
 
+            {preview.error_count > 0 && (
+              <div style={{ marginTop:14, background:'#fef2f2', border:'1px solid #fecaca', borderRadius:6, padding:'10px 14px' }}>
+                <strong style={{ fontSize:13, color:'#dc2626' }}>Validation errors (invalid rows will be skipped):</strong>
+                <div style={{ marginTop:8 }}>
+                  {Object.entries(preview.row_errors).map(([row, errs]) => (
+                    <div key={row} style={{ fontSize:12, marginBottom:3 }}>
+                      <strong>Row {row}:</strong> {errs.join('; ')}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {preview.preview.length > 0 && (
+            <div className="card" style={{ marginBottom:16 }}>
+              <div style={{ padding:'12px 16px 8px', fontWeight:600, fontSize:14 }}>
+                Preview (first {preview.preview.length} rows)
+              </div>
+              <div className="table-wrap">
+                <table style={{ fontSize:12 }}>
+                  <thead>
+                    <tr>{preview.headers.map(h => <th key={h}>{h}</th>)}</tr>
+                  </thead>
+                  <tbody>
+                    {preview.preview.map((row, i) => (
+                      <tr key={i} style={{ background: i % 2 ? '#fafafa' : 'white' }}>
+                        {preview.headers.map(h => (
+                          <td key={h} style={{ maxWidth:180, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                            {row[h] ?? ''}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ── Step 4: result ── */}
+      {step === STEP.RESULT && result && (
+        <div className="card" style={{ marginBottom:24, padding:28, textAlign:'center' }}>
+          <div style={{ fontSize:40, marginBottom:12 }}>
+            {result.errorCount > 0 && result.successCount > 0 ? '⚠' : result.errorCount > 0 ? '✕' : '✓'}
+          </div>
+          <h3 style={{ margin:'0 0 18px' }}>Import Complete</h3>
+          <div style={{ display:'flex', gap:32, justifyContent:'center', marginBottom:20 }}>
+            <div>
+              <div style={{ fontSize:32, fontWeight:700, color:'#059669' }}>{result.successCount}</div>
+              <div style={{ fontSize:13, color:'#6b7280' }}>Imported</div>
+            </div>
+            <div>
+              <div style={{ fontSize:32, fontWeight:700, color: result.errorCount > 0 ? '#dc2626' : '#9ca3af' }}>
+                {result.errorCount}
+              </div>
+              <div style={{ fontSize:13, color:'#6b7280' }}>Failed</div>
+            </div>
+          </div>
+          {result.row_errors && result.row_errors.length > 0 && (
+            <div style={{ background:'#fef2f2', border:'1px solid #fecaca', borderRadius:6, padding:'12px 16px', marginBottom:18, textAlign:'left' }}>
+              <strong style={{ fontSize:13, color:'#dc2626' }}>Failed rows:</strong>
+              {result.row_errors.map((re, i) => (
+                <div key={i} style={{ fontSize:12, marginTop:5 }}>
+                  <strong>Row {re.row}:</strong> {re.errors.join('; ')}
+                </div>
+              ))}
+            </div>
+          )}
+          <button className="btn btn-primary" onClick={reset}>Import Another File</button>
+        </div>
+      )}
+
+      {/* ── History ── */}
+      <div className="card" style={{ marginTop:24 }}>
+        <div className="card-header" style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+          <h3>Import History</h3>
+          <button className="btn btn-sm btn-ghost" onClick={loadHistory}>↺ Refresh</button>
+        </div>
         <div className="table-wrap">
-          {history.length === 0 ? (
+          {histLoading ? (
+            <div className="empty-state">Loading…</div>
+          ) : history.length === 0 ? (
             <div className="empty-state">No imports yet</div>
           ) : (
             <table>
               <thead>
                 <tr>
-                  <th>Type</th>
-                  <th>Total</th>
-                  <th>Success</th>
-                  <th>Failed</th>
-                  <th>Status</th>
-                  <th>By</th>
-                  <th>Date</th>
-                  <th></th>
+                  <th>Module</th><th>Total</th><th>Imported</th><th>Failed</th>
+                  <th>Status</th><th>By</th><th>Date</th><th></th>
                 </tr>
               </thead>
               <tbody>
                 {history.map(job => (
                   <tr key={job.id}>
-                    <td style={{ fontWeight: 500 }}>{job.import_type}</td>
+                    <td style={{ fontWeight:500, textTransform:'capitalize' }}>
+                      {(job.import_type || '').replace('_', ' ')}
+                    </td>
                     <td className="text-mono">{job.total_records}</td>
-                    <td className="text-mono" style={{ color: '#059669' }}>{job.successful_records}</td>
-                    <td className="text-mono" style={{ color: job.failed_records > 0 ? '#dc2626' : 'inherit' }}>{job.failed_records}</td>
+                    <td className="text-mono" style={{ color:'#059669' }}>{job.successful_records ?? 0}</td>
+                    <td className="text-mono" style={{ color:(job.failed_records ?? 0) > 0 ? '#dc2626' : 'inherit' }}>
+                      {job.failed_records ?? 0}
+                    </td>
                     <td>
                       <span className={`badge ${job.status === 'complete' ? 'badge-success' : 'badge-info'}`}>
                         {job.status}
                       </span>
                     </td>
-                    <td className="text-sm text-muted">{job.user_name}</td>
+                    <td className="text-sm text-muted">{job.user_name || '—'}</td>
                     <td className="text-sm text-muted">{new Date(job.created_at).toLocaleDateString()}</td>
                     <td>
-                      {job.failed_records > 0 && (
-                        <button className="btn btn-sm btn-ghost" onClick={() => loadDetail(job)}>Errors</button>
+                      {(job.failed_records ?? 0) > 0 && (
+                        <button className="btn btn-sm btn-ghost" onClick={() => openErrors(job)}>Errors</button>
                       )}
                     </td>
                   </tr>
@@ -253,32 +326,26 @@ export default function Imports() {
         </div>
       </div>
 
-      {/* Error detail modal */}
-      {detail && (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setDetail(null)}>
-          <div className="modal" style={{ maxWidth: 600 }}>
+      {/* ── Error detail modal ── */}
+      {errModal && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setErrModal(null)}>
+          <div className="modal" style={{ maxWidth:600 }}>
             <div className="modal-header">
-              <h3>Import Errors - {detail.import_type}</h3>
-              <button className="btn btn-sm btn-ghost" onClick={() => setDetail(null)}>✕</button>
+              <h3>Import Errors — {(errModal.import_type || '').replace('_', ' ')}</h3>
+              <button className="btn btn-sm btn-ghost" onClick={() => setErrModal(null)}>✕</button>
             </div>
-            <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
-              {errors.length === 0 ? (
-                <div className="empty-state">No errors</div>
-              ) : (
-                <div>
-                  {errors.map((err, i) => (
-                    <div key={i} style={{ marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid #e5e7eb' }}>
-                      <div className="text-sm">
-                        <strong>Row {err.row_number}</strong>
-                        {err.field_name && <span className="text-muted"> • {err.field_name}</span>}
-                      </div>
-                      <div className="text-sm text-danger" style={{ marginTop: 4, color: '#dc2626' }}>
-                        {err.error_message}
-                      </div>
-                    </div>
-                  ))}
+            <div className="modal-body" style={{ maxHeight:'65vh', overflowY:'auto' }}>
+              {errRows.length === 0 ? (
+                <div className="empty-state">No error details found</div>
+              ) : errRows.map((e, i) => (
+                <div key={i} style={{ marginBottom:12, paddingBottom:12, borderBottom:'1px solid #e5e7eb' }}>
+                  <div style={{ fontSize:13, fontWeight:600 }}>
+                    Row {e.row_number}
+                    {e.field_name ? <span className="text-muted" style={{ fontWeight:400 }}> · {e.field_name}</span> : ''}
+                  </div>
+                  <div style={{ fontSize:13, color:'#dc2626', marginTop:2 }}>{e.error_message}</div>
                 </div>
-              )}
+              ))}
             </div>
           </div>
         </div>

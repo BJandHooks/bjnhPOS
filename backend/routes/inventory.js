@@ -103,7 +103,7 @@ router.patch('/:id', auth, requireRole('owner', 'manager'), async (req, res) => 
 // POST /api/inventory/bulk-import
 router.post('/bulk-import', auth, requireRole('owner', 'manager'), async (req, res) => {
   const { items } = req.body;
-  const client = await db.connect();
+  const client = await db.getClient();
   try {
     await client.query('BEGIN');
     const imported = [];

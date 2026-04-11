@@ -77,11 +77,11 @@ export default function WorkOrders() {
 
   const saveWorkOrder = async () => {
     try {
-      if (!form.customer_id) {
+      if (\!form.customer_id) {
         show('Please select a customer.', 'error');
         return;
       }
-      if (!form.description) {
+      if (\!form.description) {
         show('Please enter a description.', 'error');
         return;
       }
@@ -280,7 +280,7 @@ export default function WorkOrders() {
                 </div>
               )}
 
-              {detail.status !== 'picked_up' && (
+              {detail.status \!== 'picked_up' && (
                 <div style={{ marginTop: 24, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {detail.status === 'in_progress' && (
                     <button className="btn btn-sm btn-success" onClick={() => { markReady(detail.id); setDetail(null); }}>
