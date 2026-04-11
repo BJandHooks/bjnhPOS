@@ -85,7 +85,7 @@ Go to cPanel → **Setup Node.js App** → Edit your app:
 | Application mode | **production** |
 | Application root | `bjnhpos` (or whatever folder you uploaded to) |
 | Application URL | `sandbox.nerdcoremaine.com` |
-| Application startup file | `server.js` |
+| Application startup file | `app.js` |
 
 Click **Save**.
 
@@ -111,7 +111,8 @@ You should see the bjnhPOS login screen.
 
 ```
 cPanel Application Root (e.g., bjnhpos/)
-├── server.js            ← startup file
+├── app.js               ← startup file (requires server.js)
+│   └── server.js        ← actual app logic
 ├── package.json
 ├── .env                 ← create manually on server, never upload
 ├── db/
