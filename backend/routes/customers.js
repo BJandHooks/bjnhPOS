@@ -25,7 +25,7 @@ router.get('/', auth, async (req, res) => {
 router.get('/:id', auth, async (req, res) => {
   try {
     const customerRes = await db.query('SELECT * FROM customers WHERE id = $1', [req.params.id]);
-    if (\!customerRes.rows[0]) return res.status(404).json({ error: 'Customer not found' });
+    if (!customerRes.rows[0]) return res.status(404).json({ error: 'Customer not found' });
 
     const salesRes = await db.query(
       `SELECT s.*, u.name as staff_name

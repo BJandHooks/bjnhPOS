@@ -50,7 +50,7 @@ export default function Trades() {
   };
 
   const removeTradeItem = (idx) => {
-    setTradeItems(tradeItems.filter((_, i) => i \!== idx));
+    setTradeItems(tradeItems.filter((_, i) => i !== idx));
   };
 
   const updateTradeItem = (idx, field, value) => {
@@ -61,11 +61,11 @@ export default function Trades() {
 
   const submitTrade = async () => {
     try {
-      if (\!form.customer_id) {
+      if (!form.customer_id) {
         show('Please select a customer.', 'error');
         return;
       }
-      if (tradeItems.length === 0 || \!tradeItems.every(i => i.title)) {
+      if (tradeItems.length === 0 || !tradeItems.every(i => i.title)) {
         show('Please add at least one item with a title.', 'error');
         return;
       }
@@ -109,7 +109,7 @@ export default function Trades() {
 
   const banCustomer = async (customerId) => {
     const reason = prompt('Reason for banning customer:');
-    if (\!reason) return;
+    if (!reason) return;
 
     try {
       await api.post(`/trades/ban-customer/${customerId}`, { reason });
@@ -360,7 +360,7 @@ export default function Trades() {
       )}
 
       {/* Trade detail modal */}
-      {detail && modal \!== 'evaluate' && (
+      {detail && modal !== 'evaluate' && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setDetail(null)}>
           <div className="modal" style={{ maxWidth: 600 }}>
             <div className="modal-header">

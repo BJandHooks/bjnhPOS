@@ -68,13 +68,13 @@ router.get('/barcode/:barcode', auth, async (req, res) => {
 
 // POST /api/inventory
 router.post('/', auth, requireRole('owner', 'manager'), async (req, res) => {
-  const { title, description, condition, category, price, consignor_id, expiration_date, barcode } = req.body;
+  const { title, description, condition, category, price, original_price, consignor_id, expiration_date, barcode } = req.body;
   try {
     const result = await db.query(
       `INSERT INTO inventory
        (title, description, condition, category, price, original_price, consignor_id, expiration_date, barcode)
-       VALUES ($1, $2, $3, $4, $5, $5, $6, $7, $8) RETURNING *`,
-      [title, description, condition, category, price, consignor_id || null, expiration_date || null, barcode || null]
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+      [title, description, condition, category, price, original_price || price, consignor_id || null, expiration_date || null, barcode || null]
     );
     await log(req.user.id, 'create_item', 'inventory', result.rows[0].id, { title, price });
     res.status(201).json(result.rows[0]);
@@ -111,10 +111,10 @@ router.post('/bulk-import', auth, requireRole('owner', 'manager'), async (req, r
       const result = await client.query(
         `INSERT INTO inventory
          (title, description, condition, category, price, original_price, consignor_id, expiration_date, barcode)
-         VALUES ($1, $2, $3, $4, $5, $5, $6, $7, $8)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          ON DUPLICATE KEY UPDATE barcode=barcode RETURNING *`,
         [item.title, item.description, item.condition, item.category, item.price,
-         item.consignor_id || null, item.expiration_date || null, item.barcode || null]
+         item.original_price || item.price, item.consignor_id || null, item.expiration_date || null, item.barcode || null]
       );
       if (result.rows[0]) imported.push(result.rows[0]);
     }

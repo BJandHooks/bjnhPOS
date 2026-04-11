@@ -74,7 +74,7 @@ export default function Media() {
 
   const schedulePost = async () => {
     try {
-      if (\!form.scheduled_at) {
+      if (!form.scheduled_at) {
         show('Please select a date/time.', 'error');
         return;
       }
@@ -90,7 +90,7 @@ export default function Media() {
   const bulkUploadCaptions = async () => {
     try {
       const text = prompt('Paste captions separated by newlines:');
-      if (\!text) return;
+      if (!text) return;
       const captionList = text.split('\n').filter(c => c.trim());
       await api.post('/media/captions/upload-bulk', { captions: captionList, platform: null });
       show(`${captionList.length} captions uploaded.`, 'success');
@@ -196,7 +196,7 @@ export default function Media() {
                     </div>
                     {item.caption && <div className="text-xs text-muted" style={{ marginBottom: 8, maxHeight: 60, overflow: 'hidden' }}>{item.caption}</div>}
                     <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                      {\!item.approved && (
+                      {!item.approved && (
                         <button className="btn btn-xs btn-success" onClick={() => approveContent(item.id)}>Approve</button>
                       )}
                       <button className="btn btn-xs btn-primary" onClick={() => openSchedulePost(item)}>Schedule</button>
@@ -267,7 +267,7 @@ export default function Media() {
                   <div key={cap.id} style={{ padding: 12, backgroundColor: '#f9fafb', borderRadius: 4, border: '1px solid #e5e7eb' }}>
                     <div className="text-sm" style={{ marginBottom: 8 }}>{cap.caption}</div>
                     <div style={{ display: 'flex', gap: 8 }}>
-                      {\!cap.approved && (
+                      {!cap.approved && (
                         <button className="btn btn-xs btn-success" onClick={() => approveCaption(cap.id)}>Approve</button>
                       )}
                       {cap.approved && <span className="text-xs text-success">✓ Approved</span>}
@@ -360,7 +360,7 @@ export default function Media() {
                 <label>Platform*</label>
                 <select className="input" value={form.platform}
                   onChange={e => setForm({ ...form, platform: e.target.value })}>
-                  {PLATFORMS.filter(p => p \!== 'google_my_business').map(p => <option key={p} value={p}>{p}</option>)}
+                  {PLATFORMS.filter(p => p !== 'google_my_business').map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
               </div>
 
@@ -443,7 +443,7 @@ export default function Media() {
                 <label>Platform*</label>
                 <select className="input" value={form.platform}
                   onChange={e => setForm({ ...form, platform: e.target.value })}>
-                  {PLATFORMS.filter(p => p \!== 'google_my_business').map(p => <option key={p} value={p}>{p}</option>)}
+                  {PLATFORMS.filter(p => p !== 'google_my_business').map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
               </div>
 

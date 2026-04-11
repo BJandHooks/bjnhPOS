@@ -3,16 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 
 function fmt$(n) {
-  return '$' + (parseFloat(n) || 0).toFixed(2).replace(/\B(?=(\d{3})+(?\!\d))/g, ',');
+  return '$' + (parseFloat(n) || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
 function fmtDate(d) {
-  if (\!d) return '—';
+  if (!d) return '—';
   return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function fmtTime(d) {
-  if (\!d) return '';
+  if (!d) return '';
   return new Date(d).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
 
@@ -113,10 +113,10 @@ export default function Dashboard() {
       {/* KPI row */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(170px,1fr))', gap: 14, marginBottom: 24 }}>
         <StatCard label="Today's Sales"  value={fmt$(daily_total)}
-          sub={transaction_count + ' transaction' + (transaction_count \!== 1 ? 's' : '')} accent="#059669" />
+          sub={transaction_count + ' transaction' + (transaction_count !== 1 ? 's' : '')} accent="#059669" />
         <StatCard label="Avg Sale"       value={fmt$(avg_sale_value)}  sub="per transaction"  accent="#2563eb" />
         <StatCard label="7-Day Revenue"  value={fmt$(trendTotal)}
-          sub={week_trend.length + ' day' + (week_trend.length \!== 1 ? 's' : '') + ' with sales'} accent="#7c3aed" />
+          sub={week_trend.length + ' day' + (week_trend.length !== 1 ? 's' : '') + ' with sales'} accent="#7c3aed" />
         <StatCard label="Open Tasks"     value={open_tasks.length}
           sub={overdueCount > 0 ? overdueCount + ' overdue' : 'None overdue'}
           accent={overdueCount > 0 ? '#dc2626' : '#f59e0b'} />
@@ -275,7 +275,7 @@ export default function Dashboard() {
                   <div style={{ fontSize:10, color:'#9ca3af', marginTop:3 }}>
                     {new Date(day.sale_date).toLocaleDateString('en-US', { weekday:'short', month:'numeric', day:'numeric' })}
                   </div>
-                  <div style={{ fontSize:10, color:'#6b7280' }}>{day.day_count} sale{day.day_count \!== 1 ? 's' : ''}</div>
+                  <div style={{ fontSize:10, color:'#6b7280' }}>{day.day_count} sale{day.day_count !== 1 ? 's' : ''}</div>
                 </div>
               );
             })}

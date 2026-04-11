@@ -52,7 +52,7 @@ export default function Sidebar() {
           if (item.section) {
             return <div key={`s-${i}`} className="sidebar-section">{item.section}</div>;
           }
-          if (\!can(item.roles)) return null;
+          if (!can(item.roles)) return null;
           return (
             <NavLink
               key={item.path}

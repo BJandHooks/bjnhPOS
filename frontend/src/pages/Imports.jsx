@@ -47,7 +47,7 @@ export default function Imports() {
   };
 
   const handlePreview = async () => {
-    if (\!csv.trim()) { show('Paste CSV data first.', 'error'); return; }
+    if (!csv.trim()) { show('Paste CSV data first.', 'error'); return; }
     setPrevLoading(true);
     try {
       const r = await api.post('/imports/preview', { csv_data: csv, type: type.value });
@@ -161,7 +161,7 @@ export default function Imports() {
               </div>
             </div>
             <div style={{ display:'flex', gap:10, marginTop:16 }}>
-              <button className="btn btn-primary" onClick={handlePreview} disabled={\!csv.trim() || prevLoading}>
+              <button className="btn btn-primary" onClick={handlePreview} disabled={!csv.trim() || prevLoading}>
                 {prevLoading ? 'Checking…' : 'Preview & Validate →'}
               </button>
               <button className="btn btn-ghost" onClick={reset}>Cancel</button>
@@ -196,7 +196,7 @@ export default function Imports() {
                   onClick={handleImport}
                   disabled={importing || validRows === 0}
                 >
-                  {importing ? 'Importing…' : `Import ${validRows} valid row${validRows \!== 1 ? 's' : ''}`}
+                  {importing ? 'Importing…' : `Import ${validRows} valid row${validRows !== 1 ? 's' : ''}`}
                 </button>
               </div>
             </div>

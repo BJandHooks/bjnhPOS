@@ -12,8 +12,8 @@ function parseCSVLine(line) {
   let inQuotes = false;
   for (let i = 0; i < line.length; i++) {
     const ch = line[i];
-    if (ch === '"') { inQuotes = \!inQuotes; }
-    else if (ch === ',' && \!inQuotes) { result.push(current.trim()); current = ''; }
+    if (ch === '"') { inQuotes = !inQuotes; }
+    else if (ch === ',' && !inQuotes) { result.push(current.trim()); current = ''; }
     else { current += ch; }
   }
   result.push(current.trim());
@@ -39,25 +39,25 @@ function rowFromLine(headers, line) {
 function validateRow(type, row) {
   const errors = [];
   if (type === 'inventory') {
-    if (\!row.title) errors.push('title is required');
-    if (\!row.condition) errors.push('condition is required');
-    if (\!row.price || isNaN(parseFloat(row.price))) errors.push('price must be a valid number');
+    if (!row.title) errors.push('title is required');
+    if (!row.condition) errors.push('condition is required');
+    if (!row.price || isNaN(parseFloat(row.price))) errors.push('price must be a valid number');
   } else if (type === 'customers') {
-    if (\!row.name) errors.push('name is required');
+    if (!row.name) errors.push('name is required');
   } else if (type === 'consignors') {
-    if (\!row.name) errors.push('name is required');
-    if (\!row.split_percentage || isNaN(parseFloat(row.split_percentage)))
+    if (!row.name) errors.push('name is required');
+    if (!row.split_percentage || isNaN(parseFloat(row.split_percentage)))
       errors.push('split_percentage must be a valid number');
   } else if (type === 'users' || type === 'staff') {
-    if (\!row.name) errors.push('name is required');
-    if (\!row.email) errors.push('email is required');
-    if (\!row.role) errors.push('role is required');
+    if (!row.name) errors.push('name is required');
+    if (!row.email) errors.push('email is required');
+    if (!row.role) errors.push('role is required');
     const valid = ['admin', 'owner', 'manager', 'cashier'];
-    if (row.role && \!valid.includes(row.role.toLowerCase()))
+    if (row.role && !valid.includes(row.role.toLowerCase()))
       errors.push('role must be: admin, owner, manager, or cashier');
   } else if (type === 'work_orders') {
-    if (\!row.job_type) errors.push('job_type is required');
-    if (\!row.description) errors.push('description is required');
+    if (!row.job_type) errors.push('job_type is required');
+    if (!row.description) errors.push('description is required');
   }
   return errors;
 }
@@ -93,9 +93,9 @@ async function addError(jobId, rowNum, field, msg) {
 // ── POST /api/imports/preview ─────────────────────────────────────────────────
 router.post('/preview', auth, requireRole('owner', 'manager'), (req, res) => {
   const { csv_data, type } = req.body;
-  if (\!csv_data || \!type) return res.status(400).json({ error: 'csv_data and type are required' });
+  if (!csv_data || !type) return res.status(400).json({ error: 'csv_data and type are required' });
   const parsed = parseCSVData(csv_data);
-  if (\!parsed) return res.status(400).json({ error: 'CSV needs a header row + at least one data row' });
+  if (!parsed) return res.status(400).json({ error: 'CSV needs a header row + at least one data row' });
 
   const { headers, dataLines } = parsed;
   const preview = [];
@@ -120,9 +120,9 @@ router.post('/preview', auth, requireRole('owner', 'manager'), (req, res) => {
 // ── POST /api/imports/inventory ───────────────────────────────────────────────
 router.post('/inventory', auth, requireRole('owner', 'manager'), async (req, res) => {
   const { csv_data } = req.body;
-  if (\!csv_data) return res.status(400).json({ error: 'csv_data is required' });
+  if (!csv_data) return res.status(400).json({ error: 'csv_data is required' });
   const parsed = parseCSVData(csv_data);
-  if (\!parsed) return res.status(400).json({ error: 'CSV needs header + data rows' });
+  if (!parsed) return res.status(400).json({ error: 'CSV needs header + data rows' });
 
   const { headers, dataLines } = parsed;
   const job = await createJob(req.user.id, 'inventory', dataLines.length);
@@ -173,9 +173,9 @@ router.post('/inventory', auth, requireRole('owner', 'manager'), async (req, res
 // ── POST /api/imports/customers ───────────────────────────────────────────────
 router.post('/customers', auth, requireRole('owner', 'manager'), async (req, res) => {
   const { csv_data } = req.body;
-  if (\!csv_data) return res.status(400).json({ error: 'csv_data is required' });
+  if (!csv_data) return res.status(400).json({ error: 'csv_data is required' });
   const parsed = parseCSVData(csv_data);
-  if (\!parsed) return res.status(400).json({ error: 'CSV needs header + data rows' });
+  if (!parsed) return res.status(400).json({ error: 'CSV needs header + data rows' });
 
   const { headers, dataLines } = parsed;
   const job = await createJob(req.user.id, 'customers', dataLines.length);
@@ -219,9 +219,9 @@ router.post('/customers', auth, requireRole('owner', 'manager'), async (req, res
 // ── POST /api/imports/consignors ──────────────────────────────────────────────
 router.post('/consignors', auth, requireRole('owner'), async (req, res) => {
   const { csv_data } = req.body;
-  if (\!csv_data) return res.status(400).json({ error: 'csv_data is required' });
+  if (!csv_data) return res.status(400).json({ error: 'csv_data is required' });
   const parsed = parseCSVData(csv_data);
-  if (\!parsed) return res.status(400).json({ error: 'CSV needs header + data rows' });
+  if (!parsed) return res.status(400).json({ error: 'CSV needs header + data rows' });
 
   const { headers, dataLines } = parsed;
   const job = await createJob(req.user.id, 'consignors', dataLines.length);
@@ -267,9 +267,9 @@ router.post('/consignors', auth, requireRole('owner'), async (req, res) => {
 // ── POST /api/imports/users  (staff) ─────────────────────────────────────────
 router.post('/users', auth, requireRole('owner'), async (req, res) => {
   const { csv_data } = req.body;
-  if (\!csv_data) return res.status(400).json({ error: 'csv_data is required' });
+  if (!csv_data) return res.status(400).json({ error: 'csv_data is required' });
   const parsed = parseCSVData(csv_data);
-  if (\!parsed) return res.status(400).json({ error: 'CSV needs header + data rows' });
+  if (!parsed) return res.status(400).json({ error: 'CSV needs header + data rows' });
 
   const { headers, dataLines } = parsed;
   const job = await createJob(req.user.id, 'users', dataLines.length);
@@ -287,7 +287,7 @@ router.post('/users', auth, requireRole('owner'), async (req, res) => {
       continue;
     }
     try {
-      const rawPw = row.password || 'ChangeMe123\!';
+      const rawPw = row.password || 'ChangeMe123!';
       const hash = await bcrypt.hash(rawPw, 10);
       await db.query(
         `INSERT INTO users (name, email, password_hash, role, active)
@@ -311,9 +311,9 @@ router.post('/users', auth, requireRole('owner'), async (req, res) => {
 // ── POST /api/imports/work_orders ────────────────────────────────────────────
 router.post('/work_orders', auth, requireRole('owner', 'manager'), async (req, res) => {
   const { csv_data } = req.body;
-  if (\!csv_data) return res.status(400).json({ error: 'csv_data is required' });
+  if (!csv_data) return res.status(400).json({ error: 'csv_data is required' });
   const parsed = parseCSVData(csv_data);
-  if (\!parsed) return res.status(400).json({ error: 'CSV needs header + data rows' });
+  if (!parsed) return res.status(400).json({ error: 'CSV needs header + data rows' });
 
   const { headers, dataLines } = parsed;
   const job = await createJob(req.user.id, 'work_orders', dataLines.length);
@@ -375,8 +375,8 @@ const TEMPLATES = {
   ].join('\n'),
   users: [
     'name,email,role,password',
-    'Sam Staff,sam@store.com,cashier,ChangeMe123\!',
-    'Mia Manager,mia@store.com,manager,ChangeMe123\!',
+    'Sam Staff,sam@store.com,cashier,ChangeMe123!',
+    'Mia Manager,mia@store.com,manager,ChangeMe123!',
   ].join('\n'),
   work_orders: [
     'customer_id,job_type,description,status,deposit_collected,estimated_completion_date,notes',
@@ -387,7 +387,7 @@ const TEMPLATES = {
 
 router.get('/templates/:type', auth, (req, res) => {
   const template = TEMPLATES[req.params.type];
-  if (\!template) return res.status(404).json({ error: 'No template for: ' + req.params.type });
+  if (!template) return res.status(404).json({ error: 'No template for: ' + req.params.type });
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename="import-template-${req.params.type}.csv"`);
   res.send(template);

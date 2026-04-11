@@ -40,7 +40,7 @@ router.get('/', auth, async (req, res) => {
       db.query(
         `SELECT id, title, event_type, start_date, end_date, location, status, capacity, is_free, price
          FROM events
-         WHERE start_date >= NOW() AND status \!= 'cancelled'
+         WHERE start_date >= NOW() AND status != 'cancelled'
          ORDER BY start_date ASC
          LIMIT 10`
       ),

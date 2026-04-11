@@ -95,7 +95,7 @@ function extractReturning(sql) {
  */
 function injectUUID(sql, params) {
   const isInsert = /^\s*INSERT\s+INTO/i.test(sql);
-  if (\!isInsert) return null;
+  if (!isInsert) return null;
   const hasId = /INSERT\s+INTO\s+`?\w+`?\s*\(\s*`?id`?\s*[,)]/i.test(sql);
   if (hasId) return null;
 
@@ -107,10 +107,10 @@ function injectUUID(sql, params) {
 }
 
 function serializeParams(params) {
-  if (\!params) return params;
+  if (!params) return params;
   return params.map(p => {
     if (p === null || p === undefined) return p;
-    if (Array.isArray(p) || (typeof p === 'object' && \!(p instanceof Date))) return JSON.stringify(p);
+    if (Array.isArray(p) || (typeof p === 'object' && !(p instanceof Date))) return JSON.stringify(p);
     return p;
   });
 }
