@@ -13,12 +13,12 @@ function PortalProvider({ children }) {
 
 async function pFetch(path, token) {
   const res = await fetch(`/api/portal${path}`, { headers: { 'Content-Type':'application/json', Authorization:`Bearer ${token}` } });
-  if (\!res.ok) throw new Error((await res.json()).error || 'Failed');
+  if (!res.ok) throw new Error((await res.json()).error || 'Failed');
   return res.json();
 }
 
 function PTable({ columns, rows }) {
-  if (\!rows || \!rows.length) return <div style={{ color:'#9ca3af', padding:'12px 0', fontSize:14 }}>Nothing here yet.</div>;
+  if (!rows || !rows.length) return <div style={{ color:'#9ca3af', padding:'12px 0', fontSize:14 }}>Nothing here yet.</div>;
   return (
     <div style={{ overflowX:'auto' }}>
       <table style={{ width:'100%', borderCollapse:'collapse', fontSize:14 }}>
@@ -61,7 +61,7 @@ function Login() {
     try {
       const res = await fetch('/api/portal/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email,pin}) });
       const d = await res.json();
-      if (\!res.ok) throw new Error(d.error||'Login failed');
+      if (!res.ok) throw new Error(d.error||'Login failed');
       login(d.token, d.consignor);
     } catch(e) { setErr(e.message); } finally { setLoading(false); }
   };
@@ -99,7 +99,7 @@ function Dashboard() {
   const [tab, setTab] = useState('summary');
   const [d, setD] = useState({});
   const [loading, setLoading] = useState(false);
-  const fmt$ = v => v\!=null ? `$${Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}` : '—';
+  const fmt$ = v => v!=null ? `$${Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}` : '—';
   const fmtD = v => v ? new Date(v).toLocaleDateString() : '—';
 
   const load = useCallback(async () => {

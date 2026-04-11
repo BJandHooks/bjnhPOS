@@ -80,7 +80,7 @@ export default function Events() {
 
   const saveEvent = async () => {
     try {
-      if (\!form.title || \!form.start_date) {
+      if (!form.title || !form.start_date) {
         show('Title and start date are required.', 'error');
         return;
       }
@@ -271,7 +271,7 @@ export default function Events() {
                   </div>
                 </div>
 
-                {\!form.is_free && (
+                {!form.is_free && (
                   <div className="form-group">
                     <label>Price</label>
                     <input type="number" className="input" step="0.01" value={form.price}

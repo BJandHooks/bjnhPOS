@@ -3,3 +3,7 @@ node_modules/
 build/
 .DS_Store
 *.log
+
+# Keep the public dir (built frontend goes here)
+!backend/public/
+!backend/public/.gitkeep

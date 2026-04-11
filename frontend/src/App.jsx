@@ -21,7 +21,7 @@ import './index.css';
 
 function ProtectedLayout() {
   const { user } = useAuth();
-  if (\!user) return <Navigate to="/login" />;
+  if (!user) return <Navigate to="/login" />;
   return (
     <div className="app-layout">
       <Sidebar />

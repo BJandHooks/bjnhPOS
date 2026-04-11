@@ -28,7 +28,7 @@ function getConfig() {
       password: u.password,
       database: u.pathname.replace(/^\//, ''),
       waitForConnections: true,
-      connectionLimit: 10,
+      connectionLimit: 2,
       charset: 'utf8mb4',
     };
   }
@@ -39,7 +39,7 @@ function getConfig() {
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME || process.env.DB_DATABASE,
     waitForConnections: true,
-    connectionLimit: 10,
+    connectionLimit: 2,
     charset: 'utf8mb4',
   };
 }

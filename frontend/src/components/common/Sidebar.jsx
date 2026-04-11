@@ -45,7 +45,7 @@ export default function Sidebar() {
           if (item.section) {
             return <div key={i} className="sidebar-section">{item.section}</div>;
           }
-          if (\!can(item.roles)) return null;
+          if (!can(item.roles)) return null;
           const active = location.pathname === item.path;
           return (
             <button key={item.path} className={`nav-item ${active ? 'active' : ''}`}

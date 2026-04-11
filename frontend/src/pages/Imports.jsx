@@ -53,7 +53,7 @@ export default function Imports() {
   };
 
   const previewData = () => {
-    if (\!csvData.trim()) {
+    if (!csvData.trim()) {
       show('Please paste CSV data first.', 'error');
       return;
     }
@@ -75,11 +75,11 @@ export default function Imports() {
   };
 
   const submitImport = async () => {
-    if (\!selectedType) {
+    if (!selectedType) {
       show('Please select import type.', 'error');
       return;
     }
-    if (\!csvData.trim()) {
+    if (!csvData.trim()) {
       show('Please paste CSV data.', 'error');
       return;
     }
@@ -192,7 +192,7 @@ export default function Imports() {
               <button
                 className="btn btn-primary"
                 onClick={submitImport}
-                disabled={importing || \!preview}>
+                disabled={importing || !preview}>
                 {importing ? 'Importing...' : 'Import Data'}
               </button>
               <button className="btn btn-ghost" onClick={() => { setCsvData(''); setSelectedType(''); }}>
